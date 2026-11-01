@@ -1,29 +1,36 @@
 import { AudioEngine, MSG } from '../audio/AudioEngine';
+import type { SourceKind } from '../audio/types';
 import { h, Disposer, type Component } from './dom';
-import { createTabs } from './components/Tabs';
-import { createButton } from './components/Button';
-import { createBeatIndicator, createLevelMeter } from './components/LevelMeter';
+import { createKey, createKeyGroup, setDisabled, setKeyLabel } from './components/Key';
+import { ICONS } from './icons';
 
-type InputTab = 'upload' | 'mic' | 'link' | 'capture';
+type InputTab = 'capture' | 'link' | 'upload' | 'mic';
 
+/** Source order as designed (84:11990): Capture, Link, Upload, Mic. */
 const TABS = [
-  { id: 'upload', label: 'Upload' },
-  { id: 'mic', label: 'Mic' },
-  { id: 'link', label: 'Link' },
-  { id: 'capture', label: 'Capture' },
+  { value: 'capture', label: 'CAP', ariaLabel: 'Capture tab audio' },
+  { value: 'link', label: 'LNK', ariaLabel: 'Link' },
+  { value: 'upload', label: 'UPL', ariaLabel: 'Upload file' },
+  { value: 'mic', label: 'MIC', ariaLabel: 'Microphone' },
 ] as const;
+
+const TAB_OF: Record<SourceKind, InputTab> = { capture: 'capture', url: 'link', file: 'upload', mic: 'mic' };
 
 const ACCEPT = '.mp3,.mp4,.m4a,audio/mpeg,audio/mp4,video/mp4';
 
-/** Input section body: source tabs, per-source controls, status line and level meter. */
+/**
+ * Input group: CAP / LNK / UPL / MIC keys with LEDs, then the selected source's pane
+ * (design 84:11990): Capture start/stop + status, Link field + LOAD, Upload choose-file
+ * + file name, Mic start/stop + device. Hint and error lines below.
+ * Dropping a file anywhere on the window loads it.
+ */
 export function createInputSection(engine: AudioEngine): Component {
   const d = new Disposer();
-  const status = h('p', { class: 'status', role: 'status', 'aria-live': 'polite' });
+  const status = h('p', { class: 'hint status', role: 'status', 'aria-live': 'polite' });
   const say = (msg: string, isError = false) => {
     status.textContent = msg;
     status.classList.toggle('is-error', isError);
   };
-
   const run = async (fn: () => Promise<void>) => {
     try {
       say('');
@@ -33,9 +40,10 @@ export function createInputSection(engine: AudioEngine): Component {
     }
   };
 
-  // Upload
+  // ---- Upload
   const fileInput = h('input', { type: 'file', accept: ACCEPT, class: 'sr-only', tabindex: -1, 'aria-hidden': 'true' });
-  const fileName = h('span', { class: 'file-name' }, 'No file loaded');
+  const fileName = h('span', { class: 'input-aside' }, 'MP3 · MP4');
+  const uploadHint = h('p', { class: 'hint', hidden: true }, 'MP3 · MP4 — or drop a file anywhere.');
   const loadFile = (file: File) => run(async () => {
     await engine.setSource('file', file);
     await engine.play();
@@ -47,15 +55,17 @@ export function createInputSection(engine: AudioEngine): Component {
   });
   const upload = h('div', { class: 'input-pane' },
     h('div', { class: 'input-row' },
-      createButton({ label: 'Choose file', primary: true, onClick: () => fileInput.click() }),
+      createKey({ label: 'CHOOSE FILE', icon: ICONS.upload, cls: 'key-wide', onClick: () => fileInput.click() }),
       fileName,
     ),
-    h('p', { class: 'hint' }, 'MP3 or MP4. You can also drop a file anywhere.'),
+    uploadHint,
     fileInput,
   );
   d.add(engine.on('state', (s) => {
-    fileName.textContent = s.source === 'file' ? s.label : 'No file loaded';
-    fileName.title = fileName.textContent;
+    const has = s.source === 'file';
+    fileName.textContent = has ? s.label : 'MP3 · MP4';
+    fileName.title = has ? s.label : '';
+    uploadHint.hidden = !has;
   }));
 
   // Drag and drop onto the whole window
@@ -63,43 +73,51 @@ export function createInputSection(engine: AudioEngine): Component {
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
     const f = e.dataTransfer?.files?.[0];
-    if (f) { tabs.select('upload'); void loadFile(f); }
+    if (f) { select('upload'); void loadFile(f); }
   };
   window.addEventListener('dragover', onDragOver);
   window.addEventListener('drop', onDrop);
   d.add(() => { window.removeEventListener('dragover', onDragOver); window.removeEventListener('drop', onDrop); });
 
-  // Live sources (mic, capture): one Start/Stop button plus a status line driven by engine state.
+  // ---- Live sources: Start/Stop key, status inline when on, hint below when off.
   const livePane = (kind: 'mic' | 'capture', o: {
     start: string; stop: string; idle: string; on: (label: string) => string; disabled?: string;
   }) => {
-    const status = h('p', { class: 'hint', 'aria-live': 'polite' }, o.disabled ?? o.idle);
-    const btn = createButton({
-      label: o.start, primary: true,
+    const live = h('span', { class: 'input-aside is-live', 'aria-live': 'polite' });
+    const hint = h('p', { class: 'hint' }, o.disabled ?? o.idle);
+    const btn = createKey({
+      label: o.start, cls: 'key-wide',
       onClick: () => run(async () => {
         if (engine.state.source === kind) engine.stop();
         else await engine.setSource(kind, undefined);
       }),
     });
-    btn.disabled = !!o.disabled;
+    setDisabled(btn, !!o.disabled);
     d.add(engine.on('state', (s) => {
       const active = s.source === kind;
-      btn.textContent = active ? o.stop : o.start;
-      status.textContent = o.disabled ?? (active ? o.on(s.label) : o.idle);
-      status.classList.toggle('is-on', active);
+      setKeyLabel(btn, active ? o.stop : o.start);
+      btn.setAttribute('aria-pressed', String(active));
+      live.textContent = active ? o.on(s.label) : '';
+      hint.hidden = active;
     }));
-    return h('div', { class: 'input-pane' }, h('div', { class: 'input-row' }, btn), status);
+    return h('div', { class: 'input-pane' }, h('div', { class: 'input-row' }, btn, live), hint);
   };
 
   const mic = livePane('mic', {
-    start: 'Start microphone', stop: 'Stop microphone',
+    start: 'START MICROPHONE', stop: 'STOP MICROPHONE',
     idle: 'Uses the default input device. Nothing is recorded.',
-    on: (label) => `Listening: ${label}`,
+    on: (label) => label,
+  });
+  const capture = livePane('capture', {
+    start: 'START CAPTURE', stop: 'STOP CAPTURE',
+    idle: 'Pick a tab and tick “Share tab audio” in the dialog. Keep that tab playing.',
+    on: (label) => `Capturing: ${label}`,
+    disabled: AudioEngine.captureSupported ? undefined : `${MSG.captureUnsupported}.`,
   });
 
-  // Link
+  // ---- Link
   const urlField = h('input', {
-    class: 'text-field', type: 'url', placeholder: 'https://example.com/track.mp3', 'aria-label': 'Audio URL', spellcheck: 'false',
+    class: 'oled-field', type: 'url', placeholder: 'https://example.com/track.mp3', 'aria-label': 'Audio URL', spellcheck: 'false',
   });
   const loadUrl = () => run(async () => {
     await engine.setSource('url', urlField.value.trim());
@@ -107,39 +125,33 @@ export function createInputSection(engine: AudioEngine): Component {
   });
   urlField.addEventListener('keydown', (e) => { if (e.key === 'Enter') void loadUrl(); });
   const link = h('div', { class: 'input-pane' },
-    h('div', { class: 'input-row' }, urlField, createButton({ label: 'Load', primary: true, onClick: () => void loadUrl() })),
-    h('p', { class: 'hint' }, 'Direct .mp3/.m4a links only. Spotify, YouTube and other streaming links need the Capture tab.'),
+    h('div', { class: 'input-row' }, urlField, createKey({ label: 'LOAD', cls: 'key-load', onClick: () => void loadUrl() })),
+    h('p', { class: 'hint' }, 'Direct .mp3 / .m4a only. Spotify, YouTube and other streams → use CAP.'),
   );
 
-  // Capture
-  const capture = livePane('capture', {
-    start: 'Start capture', stop: 'Stop capture',
-    idle: 'Pick a tab and tick \u201cShare tab audio\u201d in the Chrome dialog. Keep that tab playing.',
-    on: (label) => `Capturing: ${label}`,
-    disabled: AudioEngine.captureSupported ? undefined : MSG.captureUnsupported,
-  });
-
-  const panes: Record<InputTab, HTMLElement> = { upload, mic, link, capture };
-  const tabs = createTabs<InputTab>(TABS, 'upload', (id) => {
-    for (const [k, el] of Object.entries(panes)) el.hidden = k !== id;
+  const panes: Record<InputTab, HTMLElement> = { capture, link, upload, mic };
+  const show = (tab: InputTab) => {
+    for (const [k, el] of Object.entries(panes)) el.hidden = k !== tab;
     say('');
-  }, 'Audio input');
-  for (const [k, el] of Object.entries(panes) as [InputTab, HTMLElement][]) {
-    el.id = tabs.panelIdFor(k);
-    el.setAttribute('role', 'tabpanel');
-  }
-
-  const meter = createLevelMeter(engine);
-  d.add(meter.dispose);
-  const beat = createBeatIndicator(engine);
-  d.add(beat.dispose);
+  };
+  const keys = createKeyGroup<InputTab>(TABS, 'upload', show, 'Audio input', { cls: 'key-row key-row-4' });
+  const select = (tab: InputTab) => { keys.set(tab); show(tab); };
+  show('upload');
+  // A source started elsewhere (drop, preset of another source...) selects its key.
+  let lastSource: SourceKind | null = null;
+  d.add(engine.on('state', (s) => {
+    if (s.source === lastSource) return;
+    lastSource = s.source;
+    if (s.source) { keys.set(TAB_OF[s.source]); for (const [k, el] of Object.entries(panes)) el.hidden = k !== TAB_OF[s.source]; }
+  }));
   d.add(engine.on('error', (e) => say(e.message, true)));
 
-  const el = h('div', { class: 'input-section' },
-    tabs.el,
-    upload, mic, link, capture,
+  const el = h('div', { class: 'group group-input' },
+    h('span', { class: 'group-label', id: 'grp-input' }, 'Input'),
+    keys.el,
+    capture, link, upload, mic,
     status,
-    h('div', { class: 'ctl ctl-meter' }, h('span', { class: 'ctl-label' }, 'Level'), meter.el, beat.el),
   );
+  keys.el.setAttribute('aria-labelledby', 'grp-input');
   return { el, dispose: () => d.dispose() };
 }

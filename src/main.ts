@@ -1,4 +1,5 @@
 import './ui/tokens.css';
+import { PrefsStore, applyTheme } from './ui/themes';
 import './ui/app.css';
 import { ParamStore } from './app/store';
 import { Stage } from './app/stage';
@@ -6,8 +7,14 @@ import { AudioEngine } from './audio/AudioEngine';
 import { EFFECTS, DEFAULT_EFFECT, getEffect } from './effects/registry';
 import { createPanel } from './ui/Panel';
 import { createTransport } from './ui/Transport';
+import { installTooltips } from './ui/components/Tooltip';
 import { PresetBank } from './presets/store';
-import { h } from './ui/dom';
+import { h, svg } from './ui/dom';
+import { ICONS } from './ui/icons';
+
+// UI chrome prefs (theme, panel open) first, so the first paint has the right theme.
+const prefs = new PrefsStore();
+applyTheme(prefs.get());
 
 const mobile = matchMedia('(pointer: coarse)').matches;
 
@@ -20,13 +27,15 @@ const AUDIO_KEYS = ['bassSens', 'midSens', 'highSens', 'smoothRise', 'smoothFall
 for (const k of AUDIO_KEYS) store.watch(k, (v) => engine.configure({ [k]: v }));
 
 const root = document.getElementById('app')!;
+// The canvas fills the window; the panel, transport and keys float over it.
 const stageEl = h('main', { class: 'stage', 'aria-label': 'Visualization' });
 
 let stage: Stage | null = null;
 
+/** Fullscreen the whole app, so the panel stays toggleable in fullscreen. */
 const toggleFullscreen = () => {
   if (document.fullscreenElement) void document.exitFullscreen();
-  else void stageEl.requestFullscreen?.();
+  else void document.documentElement.requestFullscreen?.();
 };
 
 /** Local time as YYYYMMDD-HHMMSS. */
@@ -52,12 +61,54 @@ const setEffect = (id: string) => {
   stage?.setEffect(entry.create);
 };
 
-const panel = createPanel(store, engine, presets, EFFECTS, {
-  fullscreen: toggleFullscreen, screenshot: () => void screenshot(), setEffect,
+// ---- panel show / hide
+const setPanel = (open: boolean, focus = false) => {
+  prefs.set({ panel: open });
+  if (focus) (open ? panel.el.querySelector<HTMLElement>('.title-row .icon-btn') : showKey)?.focus({ preventScroll: true });
+};
+
+const panel = createPanel(store, engine, presets, EFFECTS, prefs, {
+  screenshot: () => void screenshot(),
+  setEffect,
+  hide: () => setPanel(false, true),
 });
-const transport = createTransport(engine, toggleFullscreen);
-stageEl.append(transport.el);
-root.append(h('div', { class: 'shell' }, panel.el, stageEl));
+
+/** Floating key (design 84:18481 / 84:18538): plate, 48 px key, icon, LED. */
+const floatKey = (cls: string, icon: string, label: string, tip: string, onClick: () => void) => {
+  const btn = h('button', { type: 'button', class: 'float-key', 'aria-label': label, 'data-tip': tip, onclick: onClick },
+    h('span', { class: 'led', 'aria-hidden': 'true' }), svg(icon));
+  return { el: h('div', { class: `float-plate ${cls}` }, btn), btn };
+};
+const show = floatKey('float-panel', ICONS.sidebar, 'Show panel', 'Show panel (H)', () => setPanel(true, true));
+const showKey = show.btn;
+show.btn.setAttribute('aria-controls', 'panel');
+const fs = floatKey('float-fullscreen', ICONS.fullscreen, 'Fullscreen', 'Fullscreen', toggleFullscreen);
+
+const transport = createTransport(engine);
+const shell = h('div', { class: 'shell' }, stageEl, panel.el, show.el, fs.el, transport.el);
+root.append(shell);
+
+prefs.watch((p) => {
+  shell.classList.toggle('panel-open', p.panel);
+  panel.el.toggleAttribute('inert', !p.panel);
+  panel.el.setAttribute('aria-hidden', String(!p.panel));
+  show.el.toggleAttribute('inert', p.panel);
+  showKey.setAttribute('aria-expanded', String(p.panel));
+  panel.el.querySelector('.title-row .icon-btn')?.setAttribute('aria-expanded', String(p.panel));
+  // LED lit while the panel is open (it shows briefly during the cross-fade), unlit when closed.
+  show.el.classList.toggle('is-on', p.panel);
+});
+
+const syncFullscreen = () => {
+  const on = !!document.fullscreenElement;
+  fs.el.classList.toggle('is-on', on);
+  fs.btn.replaceChildren(h('span', { class: 'led', 'aria-hidden': 'true' }), svg(on ? ICONS.fullscreenExit : ICONS.fullscreen));
+  fs.btn.setAttribute('aria-label', on ? 'Exit fullscreen' : 'Fullscreen');
+  fs.btn.dataset.tip = on ? 'Exit fullscreen' : 'Fullscreen';
+};
+document.addEventListener('fullscreenchange', syncFullscreen);
+
+installTooltips();
 
 try {
   stage = new Stage(stageEl, store, engine, getEffect(store.effectId)!.create);
@@ -66,14 +117,29 @@ try {
   stageEl.prepend(h('p', { class: 'stage-error' }, 'WebGL2 is not available in this browser.'));
 }
 
-// Space toggles playback when focus is not in a control.
+const typing = (t: EventTarget | null) => {
+  const el = t as HTMLElement | null;
+  return !!el?.closest?.('input:not([type=range]):not([type=color]), textarea, select, [contenteditable=""], [contenteditable="true"]');
+};
+
 window.addEventListener('keydown', (e) => {
-  if (e.code !== 'Space') return;
-  const t = e.target as HTMLElement;
-  if (t.closest('input, button, textarea, select, [role="tab"]')) return;
-  e.preventDefault();
-  void engine.toggle();
+  if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+  // H toggles the panel, except while typing.
+  if (e.code === 'KeyH' && !typing(e.target)) {
+    e.preventDefault();
+    const open = !prefs.get().panel;
+    // Keep focus somewhere visible when the focused control is about to hide.
+    setPanel(open, !open && panel.el.contains(document.activeElement));
+    return;
+  }
+  // Space toggles playback when focus is not in a control.
+  if (e.code === 'Space') {
+    const t = e.target as HTMLElement;
+    if (t.closest('input, button, textarea, select, [role="slider"], [role="radio"], [role="combobox"], [role="listbox"]')) return;
+    e.preventDefault();
+    void engine.toggle();
+  }
 });
 
 // Dev builds, or any build with ?debug, expose internals for the console and automated tests.
-if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) Object.assign(window, { store, engine, stage, presets, setEffect });
+if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) Object.assign(window, { store, engine, stage, presets, setEffect, prefs });

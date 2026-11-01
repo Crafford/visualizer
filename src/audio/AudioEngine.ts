@@ -159,6 +159,25 @@ export class AudioEngine {
     return f;
   }
 
+  /** Seconds: media time, or seconds since a live source started (as of the last getFrame()). */
+  get frameTime(): number { return this.frame.time; }
+
+  /** Analyser bin count (fftSize / 2), 0 before the first source. */
+  get spectrumSize(): number { return this.analyser?.frequencyBinCount ?? 0; }
+  /** Sample rate of the AudioContext, 0 before the first source. */
+  get sampleRate(): number { return this.ctx?.sampleRate ?? 0; }
+
+  /**
+   * Byte magnitudes (0..255 over the analyser's dB range) of the current block, for UI meters.
+   * Reads the analyser without touching the feature extractor (smoothingTimeConstant is 0,
+   * so an extra read has no side effects). Returns false when there is no analyser yet.
+   */
+  getSpectrum(out: Uint8Array<ArrayBuffer>): boolean {
+    if (!this.analyser) return false;
+    this.analyser.getByteFrequencyData(out);
+    return true;
+  }
+
   dispose(): void {
     this.teardownSource();
     void this.ctx?.close();

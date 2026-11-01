@@ -1,111 +1,123 @@
 import type { ParamStore } from '../app/store';
 import { defaultPresetId, resolvePreset, type PresetBank } from '../presets/store';
 import type { Preset } from '../presets/types';
-import { h, type Component } from './dom';
-import { createButton } from './components/Button';
+import { h, Disposer, type Component } from './dom';
+import { createKey, setDisabled } from './components/Key';
+import { createDropdown } from './components/Dropdown';
 
 type Mode = 'idle' | 'saving' | 'deleting';
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'preset';
+/** P01 is the effect's Default, user presets follow in list order. */
+export const presetNum = (i: number) => `P${String(i + 1).padStart(2, '0')}`;
 
 /**
- * Preset picker for the active effect: select (Default + that effect's presets) + Reset
- * (reload the selected preset), then Save / Delete and Export / Import. Save and Delete
- * confirm inline in the second row (no browser dialogs). The selection is remembered per
- * effect for the session. Importing a preset of another effect switches to that effect.
+ * Presets group (design 84:11396, states 84:11937): dropdown (P01 · DEFAULT, then the active
+ * effect's user presets P02...) + RST, then SAVE / DEL and EXP / IMP. SAVE turns the row into
+ * an OLED name field with SAVE / CNCL; DEL asks inline. A status line (green LED on success)
+ * reports the result. The selection is remembered per effect for the session; importing a
+ * preset of another effect switches to that effect. `onLabel` reports the shown preset.
  */
 export function createPresetsSection(
   store: ParamStore, bank: PresetBank, switchEffect: (effectId: string) => void,
+  onLabel: (num: string, name: string) => void,
 ): Component {
+  const d = new Disposer();
   const defaultId = () => defaultPresetId(store.effectId);
   const chosen = new Map<string, string>();
   let selected = defaultId();
   let mode: Mode = 'idle';
 
-  const select = h('select', { class: 'select', 'aria-label': 'Preset' });
-  const status = h('p', { class: 'status', role: 'status', 'aria-live': 'polite' });
+  const dropdown = createDropdown('Preset', (id) => { say(''); choose(id); }, 'dd-preset');
+  d.add(dropdown.dispose);
+  const statusText = h('span');
+  const status = h('p', { class: 'preset-status', role: 'status', 'aria-live': 'polite', hidden: true },
+    h('span', { class: 'status-led', 'aria-hidden': 'true' }), statusText);
   const actions = h('div', { class: 'preset-actions' });
   const file = h('input', { type: 'file', accept: '.json,application/json', hidden: true, 'aria-hidden': 'true', tabindex: -1 });
 
   const say = (msg: string, error = false) => {
-    status.textContent = msg;
+    statusText.textContent = msg;
+    status.hidden = !msg;
     status.classList.toggle('is-error', error);
   };
   const current = (): Preset => bank.get(selected) ?? bank.get(defaultId())!;
-
-  // Over the store's defaults (app + active effect), so every param is set.
   const apply = (p: Preset) => store.patch(resolvePreset(p, store.defaultValues));
 
-  const fillSelect = () => {
-    select.replaceChildren(...bank.list(store.effectId).map((p) => h('option', { value: p.id }, p.name)));
-    select.value = selected;
+  const fill = () => {
+    const list = bank.list(store.effectId);
+    dropdown.setItems(list.map((p, i) => ({ value: p.id, num: presetNum(i), label: p.name.toUpperCase() })), selected);
+    const i = Math.max(0, list.findIndex((p) => p.id === selected));
+    onLabel(presetNum(i), list[i]?.name ?? 'Default');
   };
 
   const choose = (id: string, load = true) => {
     const p = bank.get(id);
     selected = p && p.effect === store.effectId ? id : defaultId();
     chosen.set(store.effectId, selected);
-    fillSelect();
+    fill();
     if (load) apply(current());
     setMode('idle');
   };
 
-  // ---- second row, per mode
-  const nameField = h('input', {
-    class: 'text-field', type: 'text', maxlength: 60, spellcheck: 'false', autocomplete: 'off',
-    'aria-label': 'Preset name', placeholder: 'Preset name',
+  // ---- naming row: OLED field with the next number, a block cursor (CSS caret), SAVE / CNCL
+  const nameNum = h('span', { class: 'oled-dim' });
+  const nameInput = h('input', {
+    class: 'name-input', type: 'text', maxlength: 60, spellcheck: 'false', autocomplete: 'off',
+    'aria-label': 'Preset name', placeholder: 'NAME',
   });
+  const nameField = h('label', { class: 'oled-field name-field' }, nameNum, nameInput, h('span', { class: 'name-cursor', 'aria-hidden': 'true' }));
   const commitSave = () => {
     try {
-      const p = bank.save(nameField.value, store.all, store.effectId);
-      say(`Saved “${p.name}”.`);
+      const p = bank.save(nameInput.value, store.all, store.effectId);
+      say(`Saved “${p.name}”`);
       choose(p.id, false);
     } catch (err) {
       say((err as Error).message, true);
-      nameField.focus();
+      nameInput.focus();
     }
   };
-  nameField.addEventListener('keydown', (e) => {
+  nameInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); commitSave(); }
     else if (e.key === 'Escape') { e.preventDefault(); setMode('idle'); }
   });
 
-  const small = (label: string, onClick: () => void, title?: string, primary = false) => {
-    const b = createButton({ label, onClick, title, primary });
-    b.classList.add('btn-s');
-    return b;
-  };
+  const key = (label: string, onClick: () => void, tip?: string, cls = 'key-act') => createKey({ label, onClick, tip, cls });
 
   function setMode(next: Mode): void {
     mode = next;
-    actions.classList.toggle('is-confirm', mode !== 'idle');
+    actions.dataset.mode = mode;
     const p = current();
     if (mode === 'saving') {
-      nameField.value = p.builtIn ? '' : p.name;
+      const list = bank.list(store.effectId);
+      const existing = p.builtIn ? -1 : list.findIndex((x) => x.id === p.id);
+      nameNum.textContent = presetNum(existing >= 0 ? existing : list.length);
+      nameInput.value = p.builtIn ? '' : p.name.toUpperCase();
       actions.replaceChildren(nameField,
-        small('Save', commitSave, 'Save the current values', true),
-        small('Cancel', () => setMode('idle')));
-      nameField.focus();
-      nameField.select();
+        key('SAVE', commitSave, 'Save current values'),
+        key('CNCL', () => setMode('idle'), 'Cancel'));
+      nameInput.focus();
+      nameInput.select();
     } else if (mode === 'deleting') {
-      const yes = small('Delete', () => {
+      const yes = key('DEL', () => {
         bank.remove(p.id);
-        say(`Deleted “${p.name}”.`);
+        say(`Deleted “${p.name}”`);
         choose(defaultId(), false);
-      }, undefined, true);
+      }, `Delete “${p.name}”`);
       actions.replaceChildren(
         h('span', { class: 'preset-confirm' }, `Delete “${p.name}”?`),
-        yes, small('Cancel', () => setMode('idle')));
+        yes, key('CNCL', () => setMode('idle'), 'Cancel'));
       yes.focus();
     } else {
-      const del = small('Delete', () => setMode('deleting'), 'Delete the selected preset');
-      del.disabled = !!p.builtIn;
+      const del = key('DEL', () => setMode('deleting'), 'Delete the selected preset');
+      setDisabled(del, !!p.builtIn);
       actions.replaceChildren(
-        small('Save', () => { say(''); setMode('saving'); }, 'Save the current values as a preset'),
-        del,
-        h('span', { class: 'spacer' }),
-        small('Export', exportPreset, 'Download the selected preset as JSON'),
-        small('Import', () => file.click(), 'Add presets from a JSON file'),
+        h('span', { class: 'key-pair' },
+          key('SAVE', () => { say(''); setMode('saving'); }, 'Save current values'),
+          del),
+        h('span', { class: 'key-pair' },
+          key('EXP', exportPreset, 'Export the preset as JSON'),
+          key('IMP', () => file.click(), 'Import presets from JSON')),
       );
     }
   }
@@ -124,7 +136,7 @@ export function createPresetsSection(
     if (!f) return;
     try {
       const added = bank.importFile(await f.text());
-      say(added.length === 1 ? `Imported “${added[0].name}”.` : `Imported ${added.length} presets.`);
+      say(added.length === 1 ? `Imported “${added[0].name}”` : `Imported ${added.length} presets`);
       if (added[0].effect !== store.effectId) switchEffect(added[0].effect);
       choose(added[0].id);
     } catch (err) {
@@ -132,25 +144,23 @@ export function createPresetsSection(
     }
   });
 
-  select.addEventListener('change', () => { say(''); choose(select.value); });
-
-  const reset = createButton({
-    label: 'Reset', onClick: () => { say(''); apply(current()); },
-    title: 'Reload the selected preset',
+  const reset = createKey({
+    label: 'RST', cls: 'key-rst', tip: 'Reload the selected preset',
+    onClick: () => { say(''); apply(current()); },
   });
 
-  fillSelect();
+  fill();
   setMode('idle');
-  // Effect switched: show its presets and its last selection; values are the store's.
-  const offEffect = store.onEffect((effectId) => {
+  d.add(store.onEffect((effectId) => {
     selected = chosen.get(effectId) ?? defaultId();
-    fillSelect();
+    fill();
     setMode('idle');
-  });
+  }));
 
-  const el = h('div', { class: 'presets' },
-    h('div', { class: 'preset-row' }, select, reset),
+  const el = h('div', { class: 'group group-presets' },
+    h('span', { class: 'group-label' }, 'Presets'),
+    h('div', { class: 'preset-row' }, dropdown.el, reset),
     actions, status, file,
   );
-  return { el, dispose: offEffect };
+  return { el, dispose: () => d.dispose() };
 }

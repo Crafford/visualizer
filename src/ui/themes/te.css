@@ -1,0 +1,168 @@
+/*
+ * Teenage Engineering theme (Figma "Viz" / TE, node 84:9754).
+ * Light: aluminium deck (84:11263). Dark: field-system black (84:15590).
+ * Every value here is read from the design; components only reference the tokens.
+ * Selected with <html data-theme="te-light"> / <html data-theme="te-dark"> (see ui/themes.ts).
+ */
+:root[data-theme='te-light'] {
+  color-scheme: light;
+
+  /* Page behind the canvas (only visible before the first frame) */
+  --page-bg: #F7F7F5;
+
+  /* Panel card */
+  --panel-bg: linear-gradient(180deg, #E2E2DE 0%, #D3D3CE 100%);
+  --panel-border: #B8B8B3;
+  --panel-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --panel-scrollbar: #B8B8B3;
+
+  /* Text on the deck */
+  --ink: #121212;
+  --muted: #6B6B66;
+  --rule: #BEBEB9;
+  --tag-bg: #121212;          /* section number tag */
+  --tag-fg: #F2F2EE;
+  --chip-bg: #C9C9C4;         /* dial value chip */
+  --chip-fg: #121212;
+
+  /* Keys */
+  --key-bg: linear-gradient(180deg, #FAFAF7 0%, #E6E6E2 100%);
+  --key-border: #A6A6A1;
+  --key-fg: #121212;
+  --key-shadow: 0 2px 0 rgba(0, 0, 0, 0.22), 0 4px 6px rgba(0, 0, 0, 0.12), inset 0 0.5px 0 #FFFFFF;
+  --key-hover: rgba(255, 255, 255, 0.40);
+  --key-press: rgba(0, 0, 0, 0.06);
+  --key-press-shadow: inset 0 0.5px 0 #FFFFFF, 0 0.5px 0 rgba(0, 0, 0, 0.20), inset 0 2px 3px rgba(0, 0, 0, 0.18);
+  --led-off: #C4C4BF;
+
+  /* Primary key: orange in light */
+  --primary-bg: linear-gradient(180deg, #FF7A45 0%, #F24E12 100%);
+  --primary-border: #C93E0C;
+  --primary-fg: #F2F2EE;
+  --primary-shadow: 0 2px 0 rgba(0, 0, 0, 0.22), 0 4px 6px rgba(0, 0, 0, 0.12), inset 0 0.5px 0 #FFFFFF;
+  --primary-hover: rgba(255, 255, 255, 0.18);
+
+  /* Accent and status */
+  --accent: #FF5A1F;
+  --accent-glow: 0 0 5px rgba(255, 90, 31, 0.8);
+  --ok: #1FAE5B;
+  --ok-glow: 0 0 4px rgba(31, 174, 91, 0.8);
+
+  /* OLED (display, fields, preset list, transport strip, tooltip) */
+  --oled-bg: #0B0B0B;
+  --oled-fg: #F2F2EE;
+  --oled-dim: #6E6E69;
+  --oled-placeholder: #86867E;
+  --oled-off: #2E2E2C;
+  --oled-hot-off: #4A2414;
+  --oled-blue: #2D6BEB;
+  --oled-green: #1FAE5B;
+  --oled-frame: 0 2px 0 rgba(255, 255, 255, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --field-frame: 0 2px 0 rgba(255, 255, 255, 0.9);
+  --strip-frame: 0 1px 0 rgba(255, 255, 255, 0.9);
+  --tooltip-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+
+  /* Dials */
+  --well-bg: #2A2A29;
+  --well-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.60), 0 1px 0 rgba(255, 255, 255, 0.80);
+  --cap-shadow: 0 2px 2px rgba(0, 0, 0, 0.45), inset 0 1.5px 0 rgba(255, 255, 255, 0.45), inset 0 -3px 4px rgba(0, 0, 0, 0.12);
+  --cap-shadow-hover: 0 3px 4px rgba(0, 0, 0, 0.40), 0 6px 10px rgba(0, 0, 0, 0.12), inset 0 1.5px 0 rgba(255, 255, 255, 0.45), inset 0 -3px 4px rgba(0, 0, 0, 0.12);
+  --cap-black: #262625;
+  --cap-grey: #A8A8A3;
+  --cap-orange: #FF5A1F;
+  --pointer-on-dark: #FFFFFF;
+  --pointer-on-light: #121212;
+  --tick-on: #121212;
+  --tick-off: #A3A39E;
+
+  /* Colour swatches */
+  --swatch-border: #A6A6A1;
+
+  /* Floating keys and transport plate */
+  --float-plate-bg: transparent;
+  --float-plate-border: transparent;
+  --float-plate-shadow: none;
+  --float-key-bg: var(--key-bg);
+  --float-key-border: var(--key-border);
+  --float-key-shadow: 0 2px 0 rgba(0, 0, 0, 0.22), 0 4px 6px rgba(0, 0, 0, 0.12), inset 0 0.5px 0 #FFFFFF, 0 10px 24px rgba(0, 0, 0, 0.14);
+  --plate-bg: linear-gradient(180deg, #E2E2DE 0%, #D3D3CE 100%);
+  --plate-border: #B8B8B3;
+  --plate-shadow: 0 10px 24px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+:root[data-theme='te-dark'] {
+  color-scheme: dark;
+
+  --page-bg: #0B0B0C;
+
+  --panel-bg: linear-gradient(180deg, #1B1B1B 0%, #131313 100%);
+  --panel-border: #2A2A2A;
+  --panel-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --panel-scrollbar: #3A3A38;
+
+  --ink: #E9E9E5;
+  --muted: #8C8C87;
+  --rule: #2C2C2C;
+  --tag-bg: #D9D9D5;
+  --tag-fg: #121212;
+  --chip-bg: #262626;
+  --chip-fg: #E9E9E5;
+
+  --key-bg: linear-gradient(180deg, #262626 0%, #1A1A1A 100%);
+  --key-border: #050505;
+  --key-fg: #E9E9E5;
+  --key-shadow: 0 2px 0 rgba(0, 0, 0, 0.66), 0 4px 6px rgba(0, 0, 0, 0.36), inset 0 0.5px 0 rgba(255, 255, 255, 0.14);
+  --key-hover: rgba(255, 255, 255, 0.07);
+  --key-press: rgba(0, 0, 0, 0.06);
+  --key-press-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.14), 0 0.5px 0 rgba(0, 0, 0, 0.60), inset 0 2px 3px rgba(0, 0, 0, 0.18);
+  --led-off: #3A3A38;
+
+  /* Primary key: light grey in dark */
+  --primary-bg: linear-gradient(180deg, #E2E2DE 0%, #C6C6C2 100%);
+  --primary-border: #7E7E7A;
+  --primary-fg: #121212;
+  --primary-shadow: 0 2px 0 rgba(0, 0, 0, 0.66), 0 4px 6px rgba(0, 0, 0, 0.36), inset 0 0.5px 0 rgba(255, 255, 255, 0.90);
+  --primary-hover: rgba(255, 255, 255, 0.12);
+
+  --accent: #FF5A1F;
+  --accent-glow: 0 0 5px rgba(255, 90, 31, 0.8);
+  --ok: #1FAE5B;
+  --ok-glow: 0 0 4px rgba(31, 174, 91, 0.8);
+
+  --oled-bg: #0B0B0B;
+  --oled-fg: #F2F2EE;
+  --oled-dim: #6E6E69;
+  --oled-placeholder: #86867E;
+  --oled-off: #2E2E2C;
+  --oled-hot-off: #4A2414;
+  --oled-blue: #2D6BEB;
+  --oled-green: #1FAE5B;
+  --oled-frame: 0 0 0 1px #2A2A2A, inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --field-frame: 0 0 0 1px #343434;
+  --strip-frame: inset 0 0 0 1px #343434;
+  --tooltip-shadow: 0 4px 8px rgba(0, 0, 0, 0.75);
+
+  --well-bg: #060606;
+  --well-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.80), 0 1px 0 rgba(255, 255, 255, 0.07);
+  --cap-shadow: 0 2px 2px rgba(0, 0, 0, 0.90), inset 0 1.5px 0 rgba(255, 255, 255, 0.12), inset 0 -3px 4px rgba(0, 0, 0, 0.12);
+  --cap-shadow-hover: 0 3px 4px rgba(0, 0, 0, 0.90), 0 6px 10px rgba(0, 0, 0, 0.36), inset 0 1.5px 0 rgba(255, 255, 255, 0.12), inset 0 -3px 4px rgba(0, 0, 0, 0.12);
+  --cap-black: #2E2E2E;
+  --cap-grey: #CDCDC9;
+  --cap-orange: #FF5A1F;
+  --pointer-on-dark: #F2F2EE;
+  --pointer-on-light: #121212;
+  --tick-on: #E9E9E5;
+  --tick-off: #4A4A47;
+
+  --swatch-border: #050505;
+
+  --float-plate-bg: linear-gradient(180deg, #1C1C1C 0%, #131313 100%);
+  --float-plate-border: #2A2A2A;
+  --float-plate-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --float-key-bg: linear-gradient(180deg, #272727 0%, #1A1A1A 100%);
+  --float-key-border: #050505;
+  --float-key-shadow: 0 2px 0 rgba(0, 0, 0, 0.90), 0 4px 6px rgba(0, 0, 0, 0.50), inset 0 0.5px 0 rgba(255, 255, 255, 0.14);
+  --plate-bg: linear-gradient(180deg, #1C1C1C 0%, #131313 100%);
+  --plate-border: #2A2A2A;
+  --plate-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}

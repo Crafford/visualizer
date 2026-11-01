@@ -6,7 +6,7 @@ Static site, no backend. TypeScript + Vite + three.js (WebGL2) + Web Audio. No U
 
 ```
 src/
-  main.ts                 composition root: store, engine, panel, transport, stage
+  main.ts                 composition root: store, engine, UI prefs, panel, floating keys, transport, stage, shortcuts
   app/
     params.ts             ParamDef schema + helpers (num/color/toggle, n10), APP_PARAMS (audio response),
                           ValuesOf<>, defaults, quantize/format/parse/sanitize, uiScale
@@ -16,7 +16,7 @@ src/
     stage.ts              canvas + WebGLRenderer, ResizeObserver, DPR cap, active Effect, screenshot
   audio/
     types.ts              AudioFrame, SourceKind/SourcePayloads, AudioResponse, TransportState
-    AudioEngine.ts        AudioContext, sources, play/pause/seek, getFrame(), events
+    AudioEngine.ts        AudioContext, sources, play/pause/seek, getFrame(), events, getSpectrum() (UI meters)
     analysis.ts           FeatureExtractor: bands, rise/fall smoothing, beat detection
   effects/
     types.ts              Effect contract, EffectEntry
@@ -29,14 +29,18 @@ src/
     smoke/                smoke effect: params.ts (SMOKE_PARAMS, mode-linked colours), SmokeEffect
                           (TUNE, audio mapping, splat), SmokeTrails (trail, light/dark composite), shaders/
   ui/
-    tokens.css, app.css   design tokens and component styles
+    tokens.css            theme-independent tokens (Geist Mono type scale, geometry, motion)
+    themes/te.css         TE light / dark tokens (colours, key bevels, OLED, dial, plate shadows)
+    themes.ts             theme registry, per-viewer UI prefs (theme, LT/DRK, panel open) in localStorage
+    app.css               component styles (reads tokens only)
     dom.ts                h(), Component, Disposer
-    Panel.ts              header effect selector; builds sections and controls from the schema
-    PresetsSection.ts     preset select, Reset (reload preset), Save/Delete inline, Export/Import
-    InputSection.ts       source tabs, status, level meter
-    Transport.ts          floating pill: play/pause, time, seek, fullscreen
-    components/           Slider, NumberField, Knob, ColorField, Segments (toggle params, effect
-                          selector), Tabs, Button, LevelMeter
+    controlStyle.ts       per-param dial legend (COUNT, EMIT...), cap colour, dial order
+    Panel.ts              floating panel: header groups + numbered param sections + Output
+    Display.ts            header OLED: effect tag, preset, source, spectrum, LVL, BPM, time
+    InputSection.ts       CAP / LNK / UPL / MIC keys and their panes
+    PresetsSection.ts     preset dropdown, RST, SAVE (naming) / DEL / EXP / IMP
+    Transport.ts          floating transport: play key + OLED strip with segmented seek bar
+    components/           Key (+ radio key group), Dropdown, Dial, Swatch, Tooltip
   presets/
     types.ts              Preset, PresetStorage, PresetFile, PRESET_SCHEMA
     store.ts              PresetBank: built-in Default per effect (from the schema), user presets in
@@ -106,7 +110,7 @@ between frames: read them, never keep references. A new effect is a folder with 
 `params.ts` (its PARAMS and sections) and the effect class, plus one entry in `registry.ts`;
 each effect types its params as `AppParams & ValuesOf<typeof ITS_PARAMS>`.
 
-Switching effect (panel header selector, `setEffect(id)` in main.ts): the store saves the
+Switching effect (Visualization dropdown, `setEffect(id)` in main.ts): the store saves the
 outgoing effect's values and loads the incoming effect's last values (defaults the first
 time; app params are untouched), then the stage disposes the old effect and creates the new
 one (new trails, so the canvas starts empty), and the panel rebuilds the effect sections.
@@ -274,8 +278,7 @@ Bands arrive already multiplied by their sensitivity slider (0 = off, 1 = nomina
 | mid | turbulence | curl velocity x `(1 + 1.5 mid)` |
 | high | noise scale, ink | `turbulenceScale` x `(1 + high)`, ink per particle x `(1 + 0.5 high)` |
 
-The panel's level meter has a beat blip (accent dot, 200 ms fade, brightness from the beat
-strength) and the `engine.bpm` estimate, from the engine's `beat` event, for tuning Beat thresh.
+The OLED shows the `engine.bpm` estimate (from the engine's `beat` event) next to the LVL meter.
 
 ## Smoke effect
 
@@ -373,13 +376,82 @@ Add `?debug` to the URL to expose `engine`, `store` and `stage` on `window` in p
 
 ## UI
 
-Panel and transport are plain functions returning `{ el, dispose }`. The header reads
-"Visualizer" followed by the effect selector (a small mono segmented control: INK | SMOKE,
-arrow keys move) and the version. Section order: Presets, Input, the effect's sections
-(Ink: Particles, Trails, Look; Smoke: Plume, Look), Audio response, Output. Layout lives only in
-CSS (`.shell` grid: 320px panel, canvas fills the rest), so the panel can become a bottom
-sheet under 768px without code changes. The accent colour is reserved for the active tab,
-seek fill, level meter and focus ring.
+Design source: Figma "Viz", page TE (84:9754), the Teenage Engineering panel in light
+(84:11263) and dark (84:15590), its state frames (84:11937 presets, 84:11990 input and
+level, 84:12396 components) and the floating controls (84:18473 / 84:18642). Effects and
+rendering are untouched by the UI: it only reads and writes the store and the engine.
+
+Layout (`main.ts`, all CSS): the stage is `position: fixed; inset: 0`, so the canvas always
+fills the window and the panel never resizes it (the ResizeObserver still sizes the
+renderer). Over it float:
+- the panel: 340 px card, 24 px from the top-left, `max-height: 100dvh - 48px`, scrolls
+  internally (gradient with `background-attachment: local`);
+- top-left: the show-panel key (side-panel icon, LED), visible only while the panel is
+  hidden; top-right: the fullscreen key (LED lit in fullscreen, icon flips to exit);
+- bottom-centre: the transport plate. With the panel open it shifts right when the window
+  is too narrow to keep it clear of the panel.
+
+Show / hide: the side-panel icon left of the "VZ-01" title, the floating key, or H (ignored
+while typing in a text field, or with modifiers). 180 ms fade + 12 px slide (0 ms with
+`prefers-reduced-motion`); the hidden panel is `inert`. Focus moves to the key that brings
+it back. Fullscreen targets `document.documentElement`, so the panel stays toggleable.
+
+Themes (`themes.ts`, `themes/te.css`): `<html data-theme="<theme>-<light|dark>">`. Every
+colour, gradient and shadow is a token from the design; components read tokens only. The
+UI row in the header is a theme dropdown (TEENAGE ENGINEERING is the only entry; a theme is
+one CSS file with the same tokens plus one `THEMES` entry) and LT / DRK keys. This is UI
+chrome only, the visualizer's own colours are params. Theme, brightness and panel open
+state persist per viewer in `localStorage['visualizer.ui.v1']` (guarded; defaults on
+failure), applied before the first render.
+
+Panel, top to bottom:
+- Title row: side-panel icon, VZ-01, version.
+- OLED (`Display.ts`): effect tag (INK / SMOKE), preset (P01 DEFAULT), source title (NO FILE,
+  FILE, LINK, MIC, TAB AUDIO) and hint (file name, host, device), a 52-bar spectrum
+  (log-spaced 40 Hz..14 kHz from `engine.getSpectrum()`, a blue marker bar every 11th, orange
+  above 86% = peaking; a faint idle comb when nothing plays), the LVL meter (16 segments,
+  top 3 hot, a peak-hold segment), the tempo estimate + BPM and the elapsed time in green.
+  Updated from the engine's per-frame `level` event; no extra rAF loop.
+- UI: theme dropdown + LT / DRK.
+- Input: CAP / LNK / UPL / MIC radio keys with LEDs, then the source's pane: Start/Stop
+  capture or microphone (status inline in orange while on, hint below while off), OLED link
+  field + LOAD, CHOOSE FILE + file name. Errors go to a status line. A file dropped anywhere
+  loads and selects UPL; a source started elsewhere selects its key.
+- Visualization: INK / SMOKE dropdown (replaces the header segmented control).
+- Presets (see Presets).
+- Parameter sections, numbered across the active effect's sections and Audio response
+  (Ink: 01 PARTICLES, 02 TRAILS, 03 LOOK, 04 AUDIO RESPONSE; Smoke: 01 PLUME, 02 LOOK,
+  03 AUDIO RESPONSE): number tag, title, rule. Built from the schema by `fillControls`:
+  toggles as LED keys (Smoke MODE: LIGHT / DARK) first, then every number as a dial in a
+  grid (4 columns when the count is a multiple of 4, else 3), small integer params (Sources
+  1..3) as radio keys with the LED outside, then colours as swatch keys (legend + hex; click
+  opens the native picker). `controlStyle.ts` holds the short legends, cap colours (orange /
+  black / grey per the design for Ink; Smoke by analogy: Count and Density orange, motion
+  black, the softening dials grey) and the Ink Look order (INK, CONTRAST, SIZE, GRAIN).
+- Output: REC CLIP (disabled, "Coming soon" tooltip) and SCREENSHOT (primary key).
+
+Components:
+- Key: 30 px bevelled key; hover wash, pressed (sunk, 1 px down, inner shadow), on (orange
+  legend + lit LED via `aria-checked` / `aria-pressed`), disabled via `aria-disabled` (45%,
+  still shows its tooltip). Primary: orange (light) / light grey (dark).
+  `createKeyGroup`: radio group with roving tabindex and arrow keys.
+- Dropdown: select-only combobox (key + chevron) with an OLED listbox; selected item orange
+  with a dot; Up/Down/Home/End, Enter/Space, Escape/Tab; closes on outside pointer.
+- Dial: 58 px encoder: 11-dot scale over 270 degrees (min, centre and max dots larger) lit
+  up to the value, sunk well, cap, pointer, legend, value chip (same text as before:
+  0..10 for norm10 params, 350K, 5.5S, 1.05X). Vertical drag (200 px per sweep, Shift = 5x
+  finer), wheel (one step per notch), arrow keys / PageUp / PageDown / Home / End on the
+  visually hidden native range input (Shift = x10), double-click resets, click the chip to
+  type (Enter commits, Escape cancels; "200k" works). Hover / turning lifts the cap 1 px.
+- Swatch, Tooltip (one OLED bubble for every `[data-tip]`, on hover after 450 ms and on
+  keyboard focus; the text is also `aria-description`).
+
+Transport (`Transport.ts`): play / pause key (primary), OLED strip: state triangle (orange
+while playing), elapsed, 36 cells (played cells lit, the playhead cell orange and taller;
+click or drag to seek, arrow keys +-5 s, Home / End; `role="slider"`), total. Live sources
+show LIVE (orange), hide the total and turn the cells into a level bar. No volume control.
+
+Keyboard: Space plays / pauses unless focus is in a control; H toggles the panel.
 
 ## Presets
 
@@ -393,26 +465,30 @@ and stored presets of unknown effects are kept but not shown. Loading resolves a
 invalid values come from the defaults, and the store clamps and snaps. Save overwrites a
 user preset of the same name; "Default" is reserved. Storage failures fall back to memory.
 
-Panel: select (Default + the active effect's user presets; the selection is remembered per
-effect for the session), Reset (reload the selected preset), Save (inline
-name field), Delete (user presets only, inline confirm), Export (the selected preset as
-`preset-<name>.json`, `{ format: 'visualizer/presets', schema: 1, presets: [...] }`) and
-Import (validates the format and values, adds every valid preset with a de-duplicated name,
-then selects and loads the first, switching effect when it belongs to another one). Names are
-unique per effect. The page always starts on Ink with Default.
+Panel: dropdown "P01 · DEFAULT" then the active effect's user presets numbered P02... in list
+order (the selection is remembered per effect for the session; the OLED shows it), RST
+(reload the selected preset), SAVE (the row becomes an OLED name field showing the number
+the preset will get, an orange block cursor, SAVE / CNCL; Enter / Escape), DEL (user presets
+only, inline confirm), EXP (the selected preset as `preset-<name>.json`,
+`{ format: 'visualizer/presets', schema: 1, presets: [...] }`) and IMP (validates the format
+and values, adds every valid preset with a de-duplicated name, then selects and loads the
+first, switching effect when it belongs to another one). A status line with a green LED
+(orange on error) reports the result. Names are unique per effect. The page always starts
+on Ink with Default.
 
 ## Output
 
 Screenshot: the next rendered frame is read with `canvas.toBlob` in the same task as the
 draw (no preserveDrawingBuffer), at the drawing-buffer size (CSS size x dpr, dpr capped at
 2), composited on the paper colour; saved as `<effect>-YYYYMMDD-HHMMSS.png` (local time).
-Fullscreen targets the stage container: the panel is outside it and hides, the transport
-pill is inside it and stays; the ResizeObserver reallocates the trail targets (cleared).
+Fullscreen targets the whole document, so the panel, floating keys and transport stay (the
+panel can still be hidden with H); the ResizeObserver reallocates the trail targets (cleared).
 
 ## Milestones
 
 M0/M1 architecture, scaffold, panel shell. M2 GPU ink effect, mic/link/capture.
 M3-M5b ink effect, trails, audio response. M6 0..10 panel scale, presets (localStorage +
 JSON file), output checks, "Visualizer" title. M7 effect selector, per-effect params and presets,
-shared effect infrastructure, Smoke effect (light paper / dark). Next: performance tiers,
-mobile sheet.
+shared effect infrastructure, Smoke effect (light paper / dark). M8-M9 Smoke rebuilds.
+M10 TE UI: full-window canvas, floating panel / keys / transport, light and dark UI themes,
+dials, OLED display. Next: performance tiers, mobile sheet, REC CLIP.
