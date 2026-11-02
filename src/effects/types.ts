@@ -57,9 +57,8 @@ export interface EffectEntry {
   params: readonly ParamDef[];
   sections: readonly SectionDef[];
   create: EffectFactory;
-  /**
-   * Optional: values to apply after the user changes one param (e.g. a mode toggle that swaps
-   * colour defaults). Not called while a preset is being applied.
-   */
-  linked?(id: string, values: Readonly<ParamValues>): ParamValues | null;
+  /** Id of the colour param the canvas is painted on (mirrored when the UI mode changes). */
+  background?: string;
+  /** Optional: rewrite params of presets saved by older versions (renamed ids). */
+  migrate?(params: Readonly<Record<string, unknown>>): Record<string, unknown>;
 }

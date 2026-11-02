@@ -49,7 +49,8 @@ const lerp = (r: readonly [number, number], t: number) => r[0] + (r[1] - r[0]) *
  *   temp    (2 x RGBA16F, MRT): horizontal blur of the previous trail (+ drift on the wash).
  *   trail A/B (2 x RGBA16F, MRT, ping-pong): blurV(temp) * fade + density;
  *                   attachment 0 = line, 1 = wash (see shaders/trail.glsl.ts).
- *   screen: coverage, contrast, ink mixture, paper/ink mix, grain.
+ *   screen: coverage, contrast, ink mixture, paper/ink mix, grain (Blend mode Multiply), or
+ *           per-channel light over the paper (Screen); see COMPOSITE_FRAG.
  *
  * Panel mapping: trailFade = line memory (wash memory derived, longer), trailBlur = wash
  * spread per step, trailDrift = wash drift per step (x LOOK.driftGain), pointSize = line
@@ -98,6 +99,7 @@ export class InkTrails {
   private composite = new FullscreenPass(COMPOSITE_FRAG, {
     uLine: { value: null as THREE.Texture | null },
     uWash: { value: null as THREE.Texture | null },
+    uScreen: { value: false },
     uExposure: { value: LOOK.exposure },
     uWashGain: { value: LOOK.wash },
     uWashMax: { value: LOOK.washMax },
@@ -140,6 +142,9 @@ export class InkTrails {
     this.cur = 0;
     this.needsClear = true;
   }
+
+  /** Empty the trails before the next splat (blend mode change: the density encoding changes). */
+  clear(): void { this.needsClear = true; }
 
   /** Clear the trails and density (first frame after allocation or on demand). */
   private clearAll(renderer: THREE.WebGLRenderer): void {
@@ -231,6 +236,7 @@ export class InkTrails {
     const c = this.composite.uniforms;
     c.uLine.value = this.trails[this.cur].textures[0];
     c.uWash.value = this.trails[this.cur].textures[1];
+    c.uScreen.value = params.blend === 'screen';
     c.uContrast.value = params.contrast;
     c.uExposure.value = this.look.exposure;
     c.uWashGain.value = this.look.wash * lerp(this.look.wetWashGain, params.wetness) * (1 + beatStrength * this.look.washBeat);

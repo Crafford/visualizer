@@ -11,10 +11,23 @@ import { installTooltips } from './ui/components/Tooltip';
 import { PresetBank } from './presets/store';
 import { h, svg } from './ui/dom';
 import { ICONS } from './ui/icons';
+import { canvasPatch, type UiMode } from './app/canvasMode';
 
 // UI chrome prefs (theme, panel open) first, so the first paint has the right theme.
 const prefs = new PrefsStore();
 applyTheme(prefs.get());
+
+// Input modality for focus rings: keyboard users get them, pointer / touch users never do
+// (a tap or drag focuses a dial's range input programmatically). See app.css.
+const setInput = (kind: 'pointer' | 'keyboard') => {
+  if (document.documentElement.dataset.input !== kind) document.documentElement.dataset.input = kind;
+};
+setInput('pointer');
+window.addEventListener('pointerdown', () => setInput('pointer'), { capture: true, passive: true });
+window.addEventListener('keydown', (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (/^(Tab|Arrow|Page|Home|End|Enter|Escape| )/.test(e.key)) setInput('keyboard');
+}, { capture: true });
 
 const mobile = matchMedia('(pointer: coarse)').matches;
 
@@ -84,7 +97,8 @@ const showKey = show.btn;
 show.btn.setAttribute('aria-controls', 'panel');
 const fs = floatKey('float-fullscreen', ICONS.fullscreen, 'Fullscreen', 'Fullscreen', toggleFullscreen);
 
-const transport = createTransport(engine);
+// The panel's layout box (its transform is only the show / hide slide).
+const transport = createTransport(engine, () => panel.el.offsetLeft + panel.el.offsetWidth);
 const shell = h('div', { class: 'shell' }, stageEl, panel.el, show.el, fs.el, transport.el);
 root.append(shell);
 
@@ -97,6 +111,28 @@ prefs.watch((p) => {
   panel.el.querySelector('.title-row .icon-btn')?.setAttribute('aria-expanded', String(p.panel));
   // LED lit while the panel is open (it shows briefly during the cross-fade), unlit when closed.
   show.el.classList.toggle('is-on', p.panel);
+  transport.setPanelOpen(p.panel);
+});
+
+/**
+ * The canvas follows the UI brightness: on a LT / DRK change every effect's background is
+ * mirrored in lightness when it is on the wrong side of 50% L*, and its Blend mode is set
+ * for the new background (DRK -> Screen, LT -> Multiply). The active effect is updated
+ * through the store (its trails restart), the other effects' kept values directly, so
+ * switching effect stays consistent. Editing a colour or the blend never changes the UI.
+ */
+const applyCanvasMode = (mode: UiMode) => {
+  for (const entry of EFFECTS) {
+    store.patchEffect(entry, canvasPatch(store.effectValues(entry), entry.background, mode));
+  }
+};
+let uiMode = prefs.get().mode;
+// A page opened in DRK starts as if the user had just switched to it.
+if (uiMode === 'dark') applyCanvasMode(uiMode);
+prefs.watch((p) => {
+  if (p.mode === uiMode) return;
+  uiMode = p.mode;
+  applyCanvasMode(uiMode);
 });
 
 const syncFullscreen = () => {

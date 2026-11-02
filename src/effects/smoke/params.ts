@@ -1,6 +1,6 @@
 import {
-  N10, color, kilo, n10, num, secs, times, toggle,
-  type AppParams, type ParamDef, type ParamValues, type SectionDef, type ValuesOf,
+  BLEND_OPTIONS, N10, color, kilo, n10, num, secs, times, toggle,
+  type AppParams, type ParamDef, type SectionDef, type ValuesOf,
 } from '../../app/params';
 
 export const SMOKE_SECTIONS: readonly SectionDef[] = [
@@ -10,13 +10,6 @@ export const SMOKE_SECTIONS: readonly SectionDef[] = [
 
 const SOURCES_2 = { visibleWhen: { id: 'emitters', min: 2 } };
 const SOURCES_3 = { visibleWhen: { id: 'emitters', min: 3 } };
-
-/** Colour defaults per Mode: grey smoke on paper, light smoke on black. */
-export const SMOKE_MODE_COLOURS = {
-  light: { smokeColor1: '#00BBFF', smokeColor2: '#EC008C', smokeColor3: '#FFF200', background: '#F7F7F5' },
-  dark: { smokeColor1: '#00BBFF', smokeColor2: '#EC008C', smokeColor3: '#FFF200', background: '#000000' },
-} as const;
-const L = SMOKE_MODE_COLOURS.light;
 
 // Ranges and defaults are real units. Params with `display` show 0..10 on the panel.
 // Shared meanings with Ink: Count, Emission, Lifespan, Speed, Turbulence, Swirl, Drag, Sources,
@@ -32,14 +25,14 @@ export const SMOKE_PARAMS = [
   num('turbulenceScale',    'Swirl',        'plume', 0.2,   4,      0.01,  0.58,   n10()),
   num('drag',               'Drag',         'plume', 0,     1,      0.01,  0.5,    n10()),
   num('emitters',           'Sources',      'plume', 1,     3,      1,     3),
-  toggle('mode',            'Mode',         'look',  [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }], 'light'),
+  toggle('blend',           'Blend mode',   'look',  BLEND_OPTIONS, 'multiply'),
   num('density',            'Density',      'look',  0.005, 0.4,    0.001, 0.1,    n10()),
   num('softness',           'Softness',     'look',  0,     1,      0.01,  0.5,    n10()),
   num('haze',               'Haze',         'look',  0,     1,      0.01,  0.5,    n10()),
-  color('smokeColor1',      'Smoke colour 1', 'look', L.smokeColor1),
-  color('smokeColor2',      'Smoke colour 2', 'look', L.smokeColor2, SOURCES_2),
-  color('smokeColor3',      'Smoke colour 3', 'look', L.smokeColor3, SOURCES_3),
-  color('background',       'Background',   'look',  L.background),
+  color('smokeColor1',      'Smoke colour 1', 'look', '#00BBFF'),
+  color('smokeColor2',      'Smoke colour 2', 'look', '#EC008C', SOURCES_2),
+  color('smokeColor3',      'Smoke colour 3', 'look', '#FFF200', SOURCES_3),
+  color('background',       'Background',   'look',  '#F7F7F5'),
   num('contrast',           'Contrast',     'look',  0.5,   3,      0.01,  1.25,   { control: 'knob', display: N10 }),
   num('grain',              'Grain',        'look',  0,     1,      0.01,  0.1,    n10()),
 ] as const satisfies readonly ParamDef[];
@@ -47,16 +40,15 @@ export const SMOKE_PARAMS = [
 export type SmokeParams = AppParams & ValuesOf<typeof SMOKE_PARAMS>;
 
 /**
- * Switching Mode swaps each colour that is still at the other mode's default to this mode's
- * default, so the defaults follow the mode while custom colours stay.
+ * Presets saved before M11 stored Smoke's blend as `mode: 'light' | 'dark'`. Light was the
+ * subtractive composite (now Multiply), dark the additive one (now Screen).
  */
-export function smokeLinked(id: string, values: Readonly<ParamValues>): ParamValues | null {
-  if (id !== 'mode') return null;
-  const to = values.mode === 'dark' ? SMOKE_MODE_COLOURS.dark : SMOKE_MODE_COLOURS.light;
-  const from = values.mode === 'dark' ? SMOKE_MODE_COLOURS.light : SMOKE_MODE_COLOURS.dark;
-  const out: ParamValues = {};
-  for (const k of Object.keys(to) as (keyof typeof to)[]) {
-    if (String(values[k]).toUpperCase() === from[k].toUpperCase()) out[k] = to[k];
-  }
-  return out;
+export const LEGACY_SMOKE_MODE: Record<string, 'multiply' | 'screen'> = { light: 'multiply', dark: 'screen' };
+
+/** Old Smoke preset params -> current ids (`mode` -> `blend`). */
+export function migrateSmokeParams(raw: Readonly<Record<string, unknown>>): Record<string, unknown> {
+  if (!('mode' in raw) || 'blend' in raw) return { ...raw };
+  const { mode, ...rest } = raw;
+  const blend = typeof mode === 'string' ? LEGACY_SMOKE_MODE[mode] : undefined;
+  return blend ? { ...rest, blend } : rest;
 }

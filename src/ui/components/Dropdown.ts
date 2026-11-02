@@ -1,7 +1,11 @@
 import { h, svg, nextId, type Component } from '../dom';
 import { ICONS } from '../icons';
 
-export interface DropdownItem { value: string; label: string; /** Grey prefix, e.g. "P01". */ num?: string }
+export interface DropdownItem {
+  value: string; label: string;
+  /** Grey prefix, e.g. "P01". */ num?: string;
+  /** Shorter text for the closed key when the label does not fit (the list shows the label). */ short?: string;
+}
 
 /**
  * Key-styled select (WAI-ARIA select-only combobox): a key with the current item and a
@@ -28,7 +32,8 @@ export function createDropdown(
   const fmt = (it: DropdownItem) => (it.num ? `${it.num} · ${it.label}` : it.label);
   const paintButton = () => {
     const it = items.find((x) => x.value === value);
-    text.textContent = it ? fmt(it) : '';
+    text.textContent = it ? (it.short ?? fmt(it)) : '';
+    btn.title = it?.short ? it.label : '';
   };
   const render = () => {
     list.replaceChildren(...items.map((it, i) => {

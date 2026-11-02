@@ -11,7 +11,12 @@ const LEGACY_EFFECT = 'ink';
 export const defaultPresetId = (effect: string) => `builtin:default:${effect}`;
 
 /** What the bank needs to know about each effect: its own params (APP_PARAMS are added). */
-export interface PresetSchema { id: string; params: readonly ParamDef[] }
+export interface PresetSchema {
+  id: string;
+  params: readonly ParamDef[];
+  /** Rewrites params saved by older versions (e.g. Smoke `mode` -> `blend`). */
+  migrate?(params: Readonly<Record<string, unknown>>): Record<string, unknown>;
+}
 
 const schemaDefs = (s: PresetSchema): readonly ParamDef[] => [...APP_PARAMS, ...s.params];
 
@@ -55,12 +60,14 @@ export class PresetBank {
   private foreign: unknown[] = [];
   readonly builtIn: Preset[];
   private schemas: Map<string, readonly ParamDef[]>;
+  private migrations: Map<string, (p: Readonly<Record<string, unknown>>) => Record<string, unknown>>;
 
   constructor(
     effects: readonly PresetSchema[], env: { mobile?: boolean } = {},
     private storage: Storage | null = safeStorage(),
   ) {
     this.schemas = new Map(effects.map((e) => [e.id, schemaDefs(e)]));
+    this.migrations = new Map(effects.filter((e) => e.migrate).map((e) => [e.id, e.migrate!.bind(e)]));
     this.builtIn = builtInPresets(effects, env);
     this.user = this.read();
   }
@@ -143,7 +150,7 @@ export class PresetBank {
       id: typeof r.id === 'string' && r.id && !r.id.startsWith('builtin:') ? r.id : newId(),
       name,
       effect,
-      params: cleanParams(r.params, defs),
+      params: cleanParams(this.migrations.get(effect)?.(r.params as Record<string, unknown>) ?? r.params, defs),
       createdAt: typeof r.createdAt === 'string' ? r.createdAt : new Date().toISOString(),
     };
   }

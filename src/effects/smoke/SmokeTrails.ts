@@ -32,9 +32,9 @@ const BLACK = new THREE.Color(0, 0, 0);
 
 /**
  * Density, trail feedback and composite for the smoke effect (InkTrails' structure, own
- * shaders): density splat target, MRT line + wash ping-pong, upward wash drift, and a light
- * paper (subtractive) or dark (additive) composite. The density rgb encoding depends on the
- * mode, so the trails are cleared when the mode changes (clear()).
+ * shaders): density splat target, MRT line + wash ping-pong, upward wash drift, and a
+ * Multiply (subtractive, light paper) or Screen (additive light) composite. The density rgb
+ * encoding depends on the blend mode, so the trails are cleared when it changes (clear()).
  */
 export class SmokeTrails {
   readonly look = SMOKE_LOOK;
@@ -107,7 +107,7 @@ export class SmokeTrails {
     this.needsClear = true;
   }
 
-  /** Empty the trails before the next splat (mode change). */
+  /** Empty the trails before the next splat (blend mode change). */
   clear(): void { this.needsClear = true; }
 
   private clearAll(renderer: THREE.WebGLRenderer): void {
@@ -187,7 +187,7 @@ export class SmokeTrails {
     const c = this.composite.uniforms;
     c.uLine.value = this.trails[this.cur].textures[0];
     c.uWash.value = this.trails[this.cur].textures[1];
-    c.uDark.value = params.mode === 'dark';
+    c.uDark.value = params.blend === 'screen';
     c.uContrast.value = params.contrast;
     c.uExposure.value = L.exposure;
     c.uWashGain.value = lerp(L.washGain, params.haze) * (1 + beatStrength * L.washBeat);

@@ -9,7 +9,6 @@ export type ParamListener = (id: string, value: ParamValue, all: Readonly<ParamV
 export interface EffectSchema {
   id: string;
   params: readonly ParamDef[];
-  linked?(id: string, values: Readonly<ParamValues>): ParamValues | null;
 }
 
 /**
@@ -28,7 +27,6 @@ export class ParamStore {
   private effect: EffectSchema;
   /** Last effect values per effect id (only the effect's own params). */
   private kept = new Map<string, ParamValues>();
-  private patching = false;
   private readonly listeners = new Set<ParamListener>();
   private readonly effectListeners = new Set<(effectId: string) => void>();
 
@@ -69,23 +67,39 @@ export class ParamStore {
     if (next === undefined || next === this.values[id]) return;
     this.values[id] = next;
     this.emit(id);
-    if (!this.patching && this.effect.linked) {
-      const more = this.effect.linked(id, this.values);
-      if (more) this.patch(more);
-    }
   }
 
   /** Apply many values (preset load). Unknown keys and invalid values are ignored. */
   patch(partial: Readonly<Record<string, unknown>>): void {
-    const was = this.patching;
-    this.patching = true;
-    try {
-      for (const d of this.defs) {
-        if (d.id in partial) this.set(d.id, partial[d.id]);
-      }
-    } finally {
-      this.patching = was;
+    for (const d of this.defs) {
+      if (d.id in partial) this.set(d.id, partial[d.id]);
     }
+  }
+
+  /**
+   * An effect's own values: live for the active effect, else its kept values (its defaults
+   * before it was first shown).
+   */
+  effectValues(effect: EffectSchema): ParamValues {
+    if (effect.id === this.effect.id) return { ...this.values };
+    return { ...defaultValues(effect.params, this.env), ...(this.kept.get(effect.id) ?? {}) };
+  }
+
+  /**
+   * Apply values to any effect: the active one through set() (listeners fire), another one
+   * into its kept values, validated the same way, so they are there when it is shown.
+   */
+  patchEffect(effect: EffectSchema, partial: Readonly<Record<string, unknown>>): void {
+    if (effect.id === this.effect.id) { this.patch(partial); return; }
+    const next = this.effectValues(effect);
+    for (const d of effect.params) {
+      if (!(d.id in partial)) continue;
+      const v = sanitizeValue(d, partial[d.id]);
+      if (v !== undefined) next[d.id] = v;
+    }
+    const own: ParamValues = {};
+    for (const d of effect.params) own[d.id] = next[d.id];
+    this.kept.set(effect.id, own);
   }
 
   reset(): void {

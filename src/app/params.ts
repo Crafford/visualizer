@@ -98,6 +98,10 @@ export const toggle = <const Id extends string, const V extends string>(
   id: Id, label: string, section: SectionId, options: readonly { value: V; label: string }[], def: NoInfer<V>,
 ): ToggleParamDef<Id, V> => ({ kind: 'toggle', id, label, section, options, default: def });
 
+/** Blend mode of the composite (both effects): Multiply = subtractive ink/smoke on a light
+ *  background, Screen = additive light on a dark background. Values kept stable for presets. */
+export const BLEND_OPTIONS = [{ value: 'multiply', label: 'Multiply' }, { value: 'screen', label: 'Screen' }] as const;
+
 export const kilo = (v: number) => `${Math.round(v / 1000)}k`;
 export const secs = (d: number) => (v: number) => `${v.toFixed(d)}s`;
 export const times = (v: number) => `${v.toFixed(2)}\u00d7`;

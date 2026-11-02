@@ -5,11 +5,12 @@
 :root {
   /* Type. The TE design uses Geist Mono only (400 + 500). */
   --f-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  --fs-title: 12px;      /* VZ-01 */
-  --fs-oled-xl: 20px;    /* OLED source title */
-  --fs-section: 10px;    /* section titles, value chips, transport times */
-  --fs-key: 9px;         /* key legends, dropdowns, OLED small text, hints in fields */
-  --fs-label: 8px;       /* group labels, dial labels, hints */
+  /* M11: every size is the design's + 1 px (the design's 8-9 px text read too small). */
+  --fs-title: 13px;      /* VZ-01 */
+  --fs-oled-xl: 21px;    /* OLED source title */
+  --fs-section: 11px;    /* section titles, value chips, transport times */
+  --fs-key: 10px;        /* key legends, dropdowns, OLED small text, hints in fields */
+  --fs-label: 9px;       /* group labels, dial labels, hints */
   --ls-title: 0.16em;
   --ls-section: 0.10em;
   --ls-key: 0.06em;
@@ -28,11 +29,15 @@
   --dial-cap: 38px;
   --float-key: 48px;
 
-  /* Motion */
+  /* Motion. State changes (hover, on, LED, theme colours) ease over --t-ui; press feedback
+     is near-instant (--t-press) and releases over --t-ui. */
   --t-panel: 180ms;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-ui: 180ms;
+  --t-press: 80ms;
+  --ease-ui: cubic-bezier(0.2, 0, 0, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --t-panel: 0ms; }
+  :root { --t-panel: 0ms; --t-ui: 0ms; --t-press: 0ms; }
 }

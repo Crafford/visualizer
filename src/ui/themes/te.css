@@ -14,7 +14,7 @@
   --panel-bg: linear-gradient(180deg, #E2E2DE 0%, #D3D3CE 100%);
   --panel-border: #B8B8B3;
   --panel-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --panel-scrollbar: #B8B8B3;
+  --scroll-thumb: rgba(107, 107, 102, 0.55);   /* --muted, softened */
 
   /* Text on the deck */
   --ink: #121212;
@@ -95,33 +95,36 @@
 
   --page-bg: #0B0B0C;
 
-  --panel-bg: linear-gradient(180deg, #1B1B1B 0%, #131313 100%);
-  --panel-border: #2A2A2A;
-  --panel-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --panel-scrollbar: #3A3A38;
+  /* M11: warm dark grey deck (#393734) instead of the design's near-black; keys, wells,
+     plates, borders and shadows derived from it (same warm hue, ~36 deg) so the theme reads
+     as one family. White text is #F2F2EE at 82% (secondary 55%) so it is not harsh. */
+  --panel-bg: #393734;
+  --panel-border: #282624;
+  --panel-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --scroll-thumb: rgba(242, 242, 238, 0.32);
 
-  --ink: #E9E9E5;
-  --muted: #8C8C87;
-  --rule: #2C2C2C;
-  --tag-bg: #D9D9D5;
-  --tag-fg: #121212;
-  --chip-bg: #262626;
-  --chip-fg: #E9E9E5;
+  --ink: rgba(242, 242, 238, 0.82);
+  --muted: rgba(242, 242, 238, 0.55);
+  --rule: #4B4946;
+  --tag-bg: #CFCDC8;
+  --tag-fg: #282624;
+  --chip-bg: #2B2927;
+  --chip-fg: rgba(242, 242, 238, 0.82);
 
-  --key-bg: linear-gradient(180deg, #262626 0%, #1A1A1A 100%);
-  --key-border: #050505;
-  --key-fg: #E9E9E5;
-  --key-shadow: 0 2px 0 rgba(0, 0, 0, 0.66), 0 4px 6px rgba(0, 0, 0, 0.36), inset 0 0.5px 0 rgba(255, 255, 255, 0.14);
-  --key-hover: rgba(255, 255, 255, 0.07);
-  --key-press: rgba(0, 0, 0, 0.06);
-  --key-press-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.14), 0 0.5px 0 rgba(0, 0, 0, 0.60), inset 0 2px 3px rgba(0, 0, 0, 0.18);
-  --led-off: #3A3A38;
+  --key-bg: linear-gradient(180deg, #4A4845 0%, #3D3B38 100%);
+  --key-border: #1F1E1C;
+  --key-fg: rgba(242, 242, 238, 0.82);
+  --key-shadow: 0 2px 0 rgba(0, 0, 0, 0.45), 0 4px 6px rgba(0, 0, 0, 0.24), inset 0 0.5px 0 rgba(255, 255, 255, 0.14);
+  --key-hover: rgba(255, 255, 255, 0.06);
+  --key-press: rgba(0, 0, 0, 0.10);
+  --key-press-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.10), 0 0.5px 0 rgba(0, 0, 0, 0.50), inset 0 2px 3px rgba(0, 0, 0, 0.28);
+  --led-off: #5C5A56;
 
-  /* Primary key: light grey in dark */
-  --primary-bg: linear-gradient(180deg, #E2E2DE 0%, #C6C6C2 100%);
-  --primary-border: #7E7E7A;
-  --primary-fg: #121212;
-  --primary-shadow: 0 2px 0 rgba(0, 0, 0, 0.66), 0 4px 6px rgba(0, 0, 0, 0.36), inset 0 0.5px 0 rgba(255, 255, 255, 0.90);
+  /* Primary key: warm light grey in dark */
+  --primary-bg: linear-gradient(180deg, #DAD8D3 0%, #C1BFBA 100%);
+  --primary-border: #6E6C68;
+  --primary-fg: #1F1E1C;
+  --primary-shadow: 0 2px 0 rgba(0, 0, 0, 0.45), 0 4px 6px rgba(0, 0, 0, 0.24), inset 0 0.5px 0 rgba(255, 255, 255, 0.90);
   --primary-hover: rgba(255, 255, 255, 0.12);
 
   --accent: #FF5A1F;
@@ -129,6 +132,7 @@
   --ok: #1FAE5B;
   --ok-glow: 0 0 4px rgba(31, 174, 91, 0.8);
 
+  /* OLED internals unchanged: the OLED is its own black screen. */
   --oled-bg: #0B0B0B;
   --oled-fg: #F2F2EE;
   --oled-dim: #6E6E69;
@@ -137,32 +141,32 @@
   --oled-hot-off: #4A2414;
   --oled-blue: #2D6BEB;
   --oled-green: #1FAE5B;
-  --oled-frame: 0 0 0 1px #2A2A2A, inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --field-frame: 0 0 0 1px #343434;
-  --strip-frame: inset 0 0 0 1px #343434;
-  --tooltip-shadow: 0 4px 8px rgba(0, 0, 0, 0.75);
+  --oled-frame: 0 0 0 1px #262422, 0 2px 0 rgba(255, 255, 255, 0.07);
+  --field-frame: 0 0 0 1px #262422, 0 2px 0 rgba(255, 255, 255, 0.07);
+  --strip-frame: inset 0 0 0 1px #262422;
+  --tooltip-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
 
-  --well-bg: #060606;
-  --well-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.80), 0 1px 0 rgba(255, 255, 255, 0.07);
-  --cap-shadow: 0 2px 2px rgba(0, 0, 0, 0.90), inset 0 1.5px 0 rgba(255, 255, 255, 0.12), inset 0 -3px 4px rgba(0, 0, 0, 0.12);
-  --cap-shadow-hover: 0 3px 4px rgba(0, 0, 0, 0.90), 0 6px 10px rgba(0, 0, 0, 0.36), inset 0 1.5px 0 rgba(255, 255, 255, 0.12), inset 0 -3px 4px rgba(0, 0, 0, 0.12);
-  --cap-black: #2E2E2E;
-  --cap-grey: #CDCDC9;
+  --well-bg: #1B1A18;
+  --well-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.70), 0 1px 0 rgba(255, 255, 255, 0.08);
+  --cap-shadow: 0 2px 2px rgba(0, 0, 0, 0.60), inset 0 1.5px 0 rgba(255, 255, 255, 0.14), inset 0 -3px 4px rgba(0, 0, 0, 0.12);
+  --cap-shadow-hover: 0 3px 4px rgba(0, 0, 0, 0.60), 0 6px 10px rgba(0, 0, 0, 0.24), inset 0 1.5px 0 rgba(255, 255, 255, 0.14), inset 0 -3px 4px rgba(0, 0, 0, 0.12);
+  --cap-black: #262523;
+  --cap-grey: #C9C7C2;
   --cap-orange: #FF5A1F;
-  --pointer-on-dark: #F2F2EE;
-  --pointer-on-light: #121212;
-  --tick-on: #E9E9E5;
-  --tick-off: #4A4A47;
+  --pointer-on-dark: rgba(242, 242, 238, 0.9);
+  --pointer-on-light: #1F1E1C;
+  --tick-on: rgba(242, 242, 238, 0.82);
+  --tick-off: #5E5C58;
 
-  --swatch-border: #050505;
+  --swatch-border: #1F1E1C;
 
-  --float-plate-bg: linear-gradient(180deg, #1C1C1C 0%, #131313 100%);
-  --float-plate-border: #2A2A2A;
-  --float-plate-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --float-key-bg: linear-gradient(180deg, #272727 0%, #1A1A1A 100%);
-  --float-key-border: #050505;
-  --float-key-shadow: 0 2px 0 rgba(0, 0, 0, 0.90), 0 4px 6px rgba(0, 0, 0, 0.50), inset 0 0.5px 0 rgba(255, 255, 255, 0.14);
-  --plate-bg: linear-gradient(180deg, #1C1C1C 0%, #131313 100%);
-  --plate-border: #2A2A2A;
-  --plate-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --float-plate-bg: #393734;
+  --float-plate-border: #282624;
+  --float-plate-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --float-key-bg: var(--key-bg);
+  --float-key-border: #1F1E1C;
+  --float-key-shadow: 0 2px 0 rgba(0, 0, 0, 0.50), 0 4px 6px rgba(0, 0, 0, 0.30), inset 0 0.5px 0 rgba(255, 255, 255, 0.14);
+  --plate-bg: #393734;
+  --plate-border: #282624;
+  --plate-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }

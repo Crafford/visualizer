@@ -72,7 +72,7 @@ const TUNE = {
  * step():   sources wander (CPU), puff events from beats, one simulation pass on the GPU
  *           (shared PingPongState + SMOKE_SIM_FRAG), then particles are splatted additively
  *           into the density target (SmokeTrails).
- * render(): fold density into the line/wash trails (upward drift), composite (light paper or dark).
+ * render(): fold density into the line/wash trails (upward drift), composite (Multiply on light paper or Screen).
  *
  * No drops, bleed or wetness: smoke is emitted on a ring (steady stream), puffs a smoke ring on
  * each beat, rises, curls and thins.
@@ -193,8 +193,8 @@ export class SmokeEffect implements Effect<SmokeParams> {
       this.state.allocate(params.particleCount);
       this.geometry.setDrawRange(0, 2 * params.particleCount);
       this.needsInit = true;
-    } else if (id === 'mode') {
-      // The density encoding (absorbance vs colour) changes with the mode.
+    } else if (id === 'blend') {
+      // The density encoding (absorbance vs colour) changes with the blend mode.
       this.trails.clear();
     }
   }
@@ -301,13 +301,13 @@ export class SmokeEffect implements Effect<SmokeParams> {
     renderer.autoClear = prevAutoClear;
   }
 
-  /** Per-source colour vector: absorbance (-ln sRGB) on light paper, the sRGB colour in dark mode. */
+  /** Per-source colour vector: absorbance (-ln sRGB) for Multiply, the sRGB colour for Screen. */
   private updateColors(params: Readonly<SmokeParams>): void {
     const hex = [params.smokeColor1, params.smokeColor2, params.smokeColor3];
-    const key = params.mode + hex.join();
+    const key = params.blend + hex.join();
     if (key === this.colorKey) return;
     this.colorKey = key;
-    const dark = params.mode === 'dark';
+    const dark = params.blend === 'screen';
     const k = (x: number) => -Math.log(Math.min(1, Math.max(x, 0.01)));
     for (let i = 0; i < MAX_ATTRACTORS; i++) {
       // Raw shader output is not colour-managed: work on the sRGB values the swatch shows.

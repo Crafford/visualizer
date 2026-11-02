@@ -18,6 +18,7 @@ const BY_ID: Record<string, Style> = {
   turbulenceScale: { short: 'SWIRL', cap: 'black' },
   drag: { short: 'DRAG', cap: 'black' },
   emitters: { short: 'SOURCES' },
+  blend: { short: 'BLEND MODE' },
   contrast: { short: 'CONTRAST', cap: 'grey' },
   grain: { short: 'GRAIN', cap: 'grey' },
   // App: audio response (design: three black, two grey, Surge orange)
@@ -49,7 +50,6 @@ const BY_EFFECT: Record<string, Style> = {
   'smoke:density': { short: 'DENSITY', cap: 'orange' },
   'smoke:softness': { short: 'SOFT', cap: 'grey' },
   'smoke:haze': { short: 'HAZE', cap: 'grey' },
-  'smoke:mode': { short: 'MODE' },
   'smoke:smokeColor1': { short: 'SMOKE 1' },
   'smoke:smokeColor2': { short: 'SMOKE 2' },
   'smoke:smokeColor3': { short: 'SMOKE 3' },

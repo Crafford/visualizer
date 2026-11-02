@@ -216,7 +216,10 @@ export class AudioEngine {
     el.src = url.href;
     this.attachMedia(el, ctx, () => MSG.linkFailed);
     this.watchCorsSilence(el);
-    const name = decodeURIComponent(url.pathname.split('/').pop() || '') || url.hostname;
+    // Host and file name ("cdn.example.com/track.mp3"); the OLED truncates with an ellipsis.
+    let file = '';
+    try { file = decodeURIComponent(url.pathname.split('/').pop() || ''); } catch { file = url.pathname.split('/').pop() || ''; }
+    const name = file ? `${url.hostname}/${file}` : url.hostname;
     this.updateState({
       source: 'url', label: name, playing: false, live: false, seekable: true, currentTime: 0, duration: NaN,
     });
@@ -266,6 +269,8 @@ export class AudioEngine {
       if (name === 'NotSupportedError' || name === 'TypeError') throw new AudioSourceError(MSG.captureUnsupported);
       throw err;
     }
+    // Name what is captured from the video track before stopping it (we only need audio).
+    const what = describeCapture(stream.getVideoTracks()[0]);
     for (const t of stream.getVideoTracks()) t.stop();
     if (gen !== this.generation) { stopStream(stream); return; }
     const track = stream.getAudioTracks()[0];
@@ -273,7 +278,7 @@ export class AudioEngine {
       stopStream(stream);
       throw new AudioSourceError(MSG.noCaptureAudio);
     }
-    this.attachStream(stream, ctx, 'capture', track.label || 'Tab audio');
+    this.attachStream(stream, ctx, 'capture', what);
     await ctx.resume();
   }
 
@@ -293,6 +298,8 @@ export class AudioEngine {
 
   private attachMedia(el: HTMLMediaElement, ctx: AudioContext, errorMsg: () => string): void {
     el.hidden = true;
+    // Files and links loop: the visual keeps going; 'ended' never fires while looping.
+    el.loop = true;
     (el as HTMLVideoElement).playsInline = true;
     this.media = el;
     const node = ctx.createMediaElementSource(el);
@@ -380,6 +387,22 @@ export class AudioEngine {
   private fire<K extends keyof AudioEvents>(type: K, ...args: Parameters<AudioEvents[K]>): void {
     for (const fn of this.handlers[type]) (fn as (...a: unknown[]) => void)(...args);
   }
+}
+
+/**
+ * What a display capture shares, as far as the browser tells: the surface type from the
+ * video track's settings, and for a window (or a tab, when it carries one) the title in the
+ * track label. Chrome labels tabs "web-contents-media-stream://..." and screens / windows
+ * "screen:..." / "window:...", which are ids, not names.
+ */
+export function describeCapture(track: MediaStreamTrack | undefined): string {
+  if (!track) return 'CHROME TAB';
+  const surface = (track.getSettings() as MediaTrackSettings & { displaySurface?: string }).displaySurface;
+  const label = track.label.trim();
+  const meaningful = !!label && !/^(web-contents-media-stream:|screen:|window:|tab:)/i.test(label) && !/^[\w-]+:\d+(:\d+)?$/.test(label);
+  if (surface === 'monitor') return 'ENTIRE SCREEN';
+  if (surface === 'window') return meaningful ? label.toUpperCase() : 'APP WINDOW';
+  return meaningful ? label.toUpperCase() : 'CHROME TAB';
 }
 
 function stopStream(s: MediaStream): void {

@@ -1,5 +1,5 @@
 import {
-  N10, N10_PERSIST, color, kilo, n10, num, secs, times,
+  BLEND_OPTIONS, N10, N10_PERSIST, color, kilo, n10, num, secs, times, toggle,
   type AppParams, type ParamDef, type SectionDef, type ValuesOf,
 } from '../../app/params';
 
@@ -27,6 +27,7 @@ export const INK_PARAMS = [
   num('trailFade',          'Persistence',  'trails',    0.85,  0.99,   0.0001, 0.9238,  { control: 'knob', display: N10_PERSIST }),
   num('trailBlur',          'Blur',         'trails',    0,     6,      0.01,  1.5,    n10({ unit: 'px' })),
   num('trailDrift',         'Drift',        'trails',    0,     2,      0.01,  0.5,    n10({ unit: 'px' })),
+  toggle('blend',           'Blend mode',   'look',      BLEND_OPTIONS, 'multiply'),
   num('pointOpacity',       'Ink',          'look',      0.005, 0.4,    0.001, 0.2025,    n10()),
   num('pointSize',          'Size',         'look',      0.5,   4,      0.01,  0.5,    n10({ unit: 'px' })),
   color('inkColor1',        'Ink colour 1', 'look',      '#00BBFF'),

@@ -8,10 +8,10 @@ import './themes/te.css';
  */
 export type ThemeMode = 'light' | 'dark';
 
-export interface UiTheme { id: string; label: string }
+export interface UiTheme { id: string; label: string; /** Text on the closed dropdown key, when the label is too long. */ short?: string }
 
 export const THEMES: readonly UiTheme[] = [
-  { id: 'te', label: 'Teenage Engineering' },
+  { id: 'te', label: 'Teenage Engineering', short: 'Teenage Eng.' },
 ];
 
 export interface UiPrefs {

@@ -6,8 +6,10 @@ Static site, no backend. TypeScript + Vite + three.js (WebGL2) + Web Audio. No U
 
 ```
 src/
-  main.ts                 composition root: store, engine, UI prefs, panel, floating keys, transport, stage, shortcuts
+  main.ts                 composition root: store, engine, UI prefs, panel, floating keys, transport, stage,
+                          shortcuts, input modality (focus rings), canvas follows the UI mode
   app/
+    canvasMode.ts         UI mode -> canvas: CIELAB lightness mirror of the background, Blend mode per mode
     params.ts             ParamDef schema + helpers (num/color/toggle, n10), APP_PARAMS (audio response),
                           ValuesOf<>, defaults, quantize/format/parse/sanitize, uiScale
     store.ts              ParamStore: app params + the active effect's params, validated against the
@@ -20,14 +22,14 @@ src/
     analysis.ts           FeatureExtractor: bands, rise/fall smoothing, beat detection
   effects/
     types.ts              Effect contract, EffectEntry
-    registry.ts           EFFECTS: { id, label, params, sections, create, linked? }[] (Ink, Smoke)
+    registry.ts           EFFECTS: { id, label, params, sections, create, background?, migrate? }[] (Ink, Smoke)
     shared/               Attractors (wandering sources), PingPongState (float MRT ping-pong particle
                           state + sim pass), FullscreenPass, shaders/ (noise + curl + hash,
                           fullscreen triangle + MAX_ATTRACTORS, two-layer blur header)
     ink/                  ink effect: params.ts (INK_PARAMS, sections), InkEffect (TUNE, audio
                           mapping), ParticleSim, InkTrails (density/trail/composite), shaders/
-    smoke/                smoke effect: params.ts (SMOKE_PARAMS, mode-linked colours), SmokeEffect
-                          (TUNE, audio mapping, splat), SmokeTrails (trail, light/dark composite), shaders/
+    smoke/                smoke effect: params.ts (SMOKE_PARAMS, legacy `mode` preset migration), SmokeEffect
+                          (TUNE, audio mapping, splat), SmokeTrails (trail, Multiply/Screen composite), shaders/
   ui/
     tokens.css            theme-independent tokens (Geist Mono type scale, geometry, motion)
     themes/te.css         TE light / dark tokens (colours, key bevels, OLED, dial, plate shadows)
@@ -35,11 +37,13 @@ src/
     app.css               component styles (reads tokens only)
     dom.ts                h(), Component, Disposer
     controlStyle.ts       per-param dial legend (COUNT, EMIT...), cap colour, dial order
-    Panel.ts              floating panel: header groups + numbered param sections + Output
+    Panel.ts              floating panel: header groups + numbered param sections + Output; overlay
+                          scroll thumb and edge fades
     Display.ts            header OLED: effect tag, preset, source, spectrum, LVL, BPM, time
+    Spectrum.ts           the OLED spectrum row (52 bars), shared by Display and the live transport
     InputSection.ts       CAP / LNK / UPL / MIC keys and their panes
     PresetsSection.ts     preset dropdown, RST, SAVE (naming) / DEL / EXP / IMP
-    Transport.ts          floating transport: play key + OLED strip with segmented seek bar
+    Transport.ts          floating transport: file/link (play key + seek bar) or live (LIVE + spectrum)
     components/           Key (+ radio key group), Dropdown, Dial, Swatch, Tooltip
   presets/
     types.ts              Preset, PresetStorage, PresetFile, PRESET_SCHEMA
@@ -62,7 +66,7 @@ rAF tick (Loop)
             pending screenshot -> canvas.toBlob (same task, no preserveDrawingBuffer)
 
 UI input -> store.set(id, v) -> sanitize (clamp, snap, hex, toggle value) -> listeners
-            -> effect entry linked(id) (e.g. Smoke Mode swaps default colours; not during preset load)
+LT / DRK -> prefs -> main.ts applyCanvasMode -> store.patchEffect(each effect, canvasPatch(...))
   - controls repaint themselves (store.watch)
   - audio response keys -> engine.configure()
   - effect.onParamChange?(id) for expensive changes (e.g. particleCount realloc)
@@ -100,7 +104,8 @@ interface EffectEntry {                    // one line in registry.ts
   params: readonly ParamDef[];             // the effect's own params (APP_PARAMS are added)
   sections: readonly SectionDef[];         // panel sections for them, in order
   create: EffectFactory;
-  linked?(id, values): ParamValues | null; // values to apply after a user change
+  background?: string;                     // id of the colour the canvas is painted on (UI mode mirror)
+  migrate?(params): Record<string, unknown>; // rewrite params of presets from older versions
 }
 ```
 
@@ -227,6 +232,16 @@ the paper and stops, feathering at the edges. Wetness turns dry card into wet wa
    coverage, so overlapping inks mix subtractively. Result = mix(paper, ink colour, coverage) +
    paper texture + grain.
 
+Blend mode (`blend` toggle in Look, M11): Multiply is the composite above, unchanged (a 10 s
+fake-clock still is pixel-identical to M10: mean abs diff 0, max 0). Screen is additive light
+for dark paper: the splat carries ink x the source's sRGB colour instead of its absorbance
+(InkEffect.updateAbsorb), so rgb / a is the mean ink colour of a layer; coverage is exactly
+Multiply's (same exposure, wash cap, glazes, contrast S-curve), the colour is the coverage-
+weighted mean of the two layers, and result = paper + (1 - paper) x colour x coverage, plus the
+same paper texture and grain. An ink at full coverage shows exactly its swatch colour (a per-
+channel tone curve was tried first and pushed #00BBFF to cyan and #EC008C to pink). Changing
+the blend clears the trails (the density encoding changes).
+
 Shared with Smoke (`effects/shared/`): Attractors, PingPongState (ParticleSim maps SimInputs
 onto the uniforms and runs it), FullscreenPass, noise/curl/hash GLSL, fullscreen triangle and
 the blur header. These were moved, not changed: the Ink shaders are textually identical and
@@ -303,20 +318,21 @@ roll speed, puff flag. Tuning in `TUNE` (SmokeEffect.ts) and `SMOKE_LOOK` (Smoke
    Velocity relaxes toward the medium at `2 x (0.25 + drag)`; buoyancy adds `rise x 1.2` up per
    s^2 (terminal ~0.32 view half-heights/s at the defaults). Death at end of life or outside.
 4. Splat (`shaders/points.glsl.ts`, copy of ink's): line segments, additive; rgb = ink x the
-   source's colour vector (absorbance on light paper, the colour itself in dark mode), a = ink.
+   source's colour vector (absorbance for Multiply, the colour itself for Screen), a = ink.
    Cooling: ink x (1 - age/life)^1.6, thinning all its life (ink only fades in its last 30%);
    the stream fades in over 1.2 s, puffs at once and x 1.5. Kick, shiver and breath as ink (render only).
 5. Trails (`SmokeTrails`): line layer fade 0.82/step, blur `lerp(0.5, 3, softness)` CSS px; wash
    fade 0.975/step, blur `lerp(0.6, 3.5, haze)`, drifting up 0.35 CSS px/step with a slow sway.
-   Beat swell on the wash as ink. Mode change clears the trails (the rgb encoding changes).
-6. Composite: Light paper = ink's subtractive composite (wash gain `lerp(0.1, 0.8, haze)`, cap
-   0.55, contrast S-curve, paper texture). Dark = additive light: per channel
+   Beat swell on the wash as ink. A blend mode change clears the trails (the rgb encoding changes).
+6. Composite: Blend mode Multiply = ink's subtractive composite (wash gain `lerp(0.1, 0.8, haze)`,
+   cap 0.55, contrast S-curve, paper texture). Screen = additive light: per channel
    E = line.rgb + wash.rgb x washGain, light = contrast(1 - exp(-E)),
    result = background + (1 - background) x light. Grain as ink in both.
 
-Mode (`toggle`): switching swaps every colour still at the other mode's default to this
-mode's default (light: #2B2B2B #3A4A5A #5A3A3A on #F7F7F5; dark: #E8E8E8 #9FB8D0 #D0A090 on
-#0B0B0C); custom colours stay. Presets apply values without this link.
+Blend mode (`blend`: `multiply` | `screen`, M11) replaces the old Mode toggle (`mode`: light |
+dark) and its default-colour swapping, which is gone: colours never change with the blend.
+Presets saved with `mode` load through `migrateSmokeParams` (light -> multiply, dark -> screen).
+The blend sets the density encoding (absorbance vs colour), so changing it clears the trails.
 
 Audio: bass -> emission x (1 + 2 bass) and wander x (1 + bass); mid -> turbulence x (1 + 1.5 mid);
 high -> curl frequency x (1 + high), ink x (1 + 0.5 high); beat -> puff, kick, shiver, wash swell.
@@ -330,10 +346,18 @@ are created lazily on the first `setSource()` (a user gesture) and resumed on ev
 
 | Source  | Input                                                        | Audible            | Transport          |
 |---------|--------------------------------------------------------------|--------------------|--------------------|
-| file    | `<audio>` (or `<video>` for video/* so MP4 uses its audio)   | yes, to destination | play/pause, seek   |
-| url     | `<audio crossOrigin="anonymous">`                            | yes                | play/pause, seek   |
+| file    | `<audio>` (or `<video>` for video/* so MP4 uses its audio), loops | yes, to destination | play/pause, seek |
+| url     | `<audio crossOrigin="anonymous">`, loops                     | yes                | play/pause, seek   |
 | mic     | `getUserMedia` with AEC/NS/AGC off -> MediaStreamSource      | no (feedback)      | "Live"             |
 | capture | `getDisplayMedia({video, audio})`, video tracks stopped      | no (tab already plays) | "Live"         |
+
+File and link elements have `loop = true` (M11), so the visual never stops at the end. Labels:
+the file name; for a link `host/file` (e.g. `cdn.example.com/track.mp3`); for capture, what is
+shared, named from the video track before it is stopped (`describeCapture`): displaySurface
+`monitor` -> ENTIRE SCREEN, `window` -> the window title when the track label carries one
+(else APP WINDOW), `browser` -> the tab title when the label carries one (else CHROME TAB).
+Chrome labels tracks with ids (`web-contents-media-stream://...`, `window:...`, `screen:...`),
+which are ignored.
 
 Failure handling: a link that fails to load (no CORS headers, 404, not audio) reports via the
 element `error` event; a link that plays pure digital zeros for 2 s (tainted element) reports
@@ -384,12 +408,12 @@ rendering are untouched by the UI: it only reads and writes the store and the en
 Layout (`main.ts`, all CSS): the stage is `position: fixed; inset: 0`, so the canvas always
 fills the window and the panel never resizes it (the ResizeObserver still sizes the
 renderer). Over it float:
-- the panel: 340 px card, 24 px from the top-left, `max-height: 100dvh - 48px`, scrolls
-  internally (gradient with `background-attachment: local`);
+- the panel: 340 px card, 24 px from the top-left, `max-height: 100dvh - 48px`; its content
+  scrolls inside it (`.panel-scroll`, see Scrolling);
 - top-left: the show-panel key (side-panel icon, LED), visible only while the panel is
   hidden; top-right: the fullscreen key (LED lit in fullscreen, icon flips to exit);
-- bottom-centre: the transport plate. With the panel open it shifts right when the window
-  is too narrow to keep it clear of the panel.
+- bottom-centre: the transport plate (see Transport). It is centred in the window, or in the
+  space right of the open panel when centring would overlap it.
 
 Show / hide: the side-panel icon left of the "VZ-01" title, the floating key, or H (ignored
 while typing in a text field, or with modifiers). 180 ms fade + 12 px slide (0 ms with
@@ -404,10 +428,55 @@ chrome only, the visualizer's own colours are params. Theme, brightness and pane
 state persist per viewer in `localStorage['visualizer.ui.v1']` (guarded; defaults on
 failure), applied before the first render.
 
+Scrolling (M11): the card is static, `.panel-scroll` inside it scrolls (wheel, trackpad,
+touch, keyboard as before). The native scroll bar is hidden (`scrollbar-width: none`); an
+overlay thumb (4 px, rounded, `--scroll-thumb` = the theme's muted colour, transparent track)
+follows scrollTop, can be dragged, and fades in over 200 ms while the pointer is over the
+panel (on touch screens: while scrolling), fading out on leave. Soft 28 px fade masks at the
+top and bottom of the scrolling area appear only when there is more content in that
+direction (`.can-up` / `.can-down`, animated through registered `--fade-top` / `--fade-bottom`).
+
+Type (M11): every size is the design's + 1 px (tokens.css: 13 / 21 / 11 / 10 / 9 px), line
+heights + 1 px; RST is 42 px wide and the theme key shows TEENAGE ENG. (the list shows the
+full name) so nothing truncates.
+
+Dark theme (M11): the deck is #393734 (warm dark grey) instead of the design's near-black;
+keys (#4A4845 -> #3D3B38), wells (#1B1A18), chips (#2B2927), caps, rules, borders, plates and
+shadows are derived from it on the same warm hue. Text is #F2F2EE at 82% (secondary 55%,
+dial ticks and pointers likewise). The OLED internals are unchanged.
+
+Focus (M11): rings are for keyboard users only. main.ts sets `<html data-input>` to `pointer`
+on every pointerdown (mouse, pen, touch) and to `keyboard` on navigation keys (Tab, arrows,
+Page/Home/End, Enter, Escape, Space); with `pointer`, no `:focus-visible` style shows, so the
+programmatic focus of a dial's range input on tap or drag never paints the orange ring. On
+coarse pointers the dial ring never shows.
+
+Motion (M11): hover, on, LED, swatch, dropdown, dial-sheen and scroll-thumb changes ease over
+`--t-ui` (180 ms, `cubic-bezier(0.2, 0, 0, 1)`); presses take `--t-press` (80 ms) and release
+over `--t-ui`. Key and floating-key hover / press shades are a `::before` overlay (a
+background-color transitions, a gradient does not). Dials never move: hover and turning only
+shade the cap (sheen overlay + deeper shadow). LT / DRK switches run inside a View Transition
+(a 180 ms cross-fade of the page, canvas included) where supported. `prefers-reduced-motion`
+sets every duration to 0 and skips the cross-fade.
+
+Canvas follows the UI mode (M11, `app/canvasMode.ts`, applied in main.ts): on a LT / DRK change,
+for every effect (the active one through the store, the others in their kept values, so
+switching effect stays consistent): Blend mode -> Screen for DRK, Multiply for LT; and the
+background (Ink `paperColor`, Smoke `background`, `EffectEntry.background`) is mirrored when its
+CIELAB L* is above 50 (to DRK) or below 50 (to LT): same LCh hue and chroma, L*' = 100 - L*,
+chroma bisected down until the colour fits sRGB. A mirrored colour remembers its source, so
+LT -> DRK -> LT returns the exact hex. Examples: #F7F7F5 (L* 97.2) -> #0A0A08 (2.7);
+#000000 -> #FFFFFF; #1E3A5F -> #A6BCE9; #00BBFF -> #004966 (chroma clamped). L* rather than
+OKLab L because L*'s linear toe keeps mirrored darks distinguishable (OKLab sends #F7F7F5 to
+#000000 and drifts on the way back). A page opened in DRK applies it once at start. Changing a
+colour or the blend by hand never changes the UI mode; presets loaded later keep their colours.
+
 Panel, top to bottom:
 - Title row: side-panel icon, VZ-01, version.
 - OLED (`Display.ts`): effect tag (INK / SMOKE), preset (P01 DEFAULT), source title (NO FILE,
-  FILE, LINK, MIC, TAB AUDIO) and hint (file name, host, device), a 52-bar spectrum
+  FILE UPLOAD PLAYING / PAUSED, LINK PLAYING / PAUSED, MIC, SYSTEM AUDIO) and hint (file name,
+  link host/file, device, what is captured: CHROME TAB, a window title, ENTIRE SCREEN;
+  uppercase, ellipsis), a 52-bar spectrum (`Spectrum.ts`)
   (log-spaced 40 Hz..14 kHz from `engine.getSpectrum()`, a blue marker bar every 11th, orange
   above 86% = peaking; a faint idle comb when nothing plays), the LVL meter (16 segments,
   top 3 hot, a peak-hold segment), the tempo estimate + BPM and the elapsed time in green.
@@ -422,7 +491,7 @@ Panel, top to bottom:
 - Parameter sections, numbered across the active effect's sections and Audio response
   (Ink: 01 PARTICLES, 02 TRAILS, 03 LOOK, 04 AUDIO RESPONSE; Smoke: 01 PLUME, 02 LOOK,
   03 AUDIO RESPONSE): number tag, title, rule. Built from the schema by `fillControls`:
-  toggles as LED keys (Smoke MODE: LIGHT / DARK) first, then every number as a dial in a
+  toggles as LED keys (BLEND MODE: MULTIPLY / SCREEN, Ink and Smoke) first, then every number as a dial in a
   grid (4 columns when the count is a multiple of 4, else 3), small integer params (Sources
   1..3) as radio keys with the LED outside, then colours as swatch keys (legend + hex; click
   opens the native picker). `controlStyle.ts` holds the short legends, cap colours (orange /
@@ -442,14 +511,22 @@ Components:
   0..10 for norm10 params, 350K, 5.5S, 1.05X). Vertical drag (200 px per sweep, Shift = 5x
   finer), wheel (one step per notch), arrow keys / PageUp / PageDown / Home / End on the
   visually hidden native range input (Shift = x10), double-click resets, click the chip to
-  type (Enter commits, Escape cancels; "200k" works). Hover / turning lifts the cap 1 px.
+  type (Enter commits, Escape cancels; "200k" works). Hover / turning shades the cap (no movement).
 - Swatch, Tooltip (one OLED bubble for every `[data-tip]`, on hover after 450 ms and on
   keyboard focus; the text is also `aria-description`).
 
-Transport (`Transport.ts`): play / pause key (primary), OLED strip: state triangle (orange
-while playing), elapsed, 36 cells (played cells lit, the playhead cell orange and taller;
-click or drag to seek, arrow keys +-5 s, Home / End; `role="slider"`), total. Live sources
-show LIVE (orange), hide the total and turn the cells into a level bar. No volume control.
+Transport (`Transport.ts`, M11), by source family:
+- File and link: shown whenever loaded, panel open or hidden. Play / pause key (primary) and
+  the OLED strip: elapsed, 36 cells (played cells lit, the playhead cell orange and taller;
+  click or drag to seek, arrow keys +-5 s, Home / End; `role="slider"`), total. The media loops.
+- Mic and capture: shown only while the panel is hidden (the panel's OLED shows the same).
+  No key (a page cannot pause the captured app): just the OLED strip, framed by the plate's
+  6 px on every side, with LIVE (orange) and the OLED's spectrum bars (blue markers, orange
+  peaks), live.
+- Nothing loaded: hidden (an empty transport over the art read as clutter; the OLED says NO FILE).
+Placement: centred in the window when that keeps 16 px clear of the open panel, else centred in
+the space right of it (max-width = that space; the strip shrinks). It fades in place and only
+slides (left, 180 ms) on panel toggles while visible. No volume control.
 
 Keyboard: Space plays / pauses unless focus is in a control; H toggles the panel.
 
@@ -461,7 +538,8 @@ schema (`builtin:default:<effect>`, env-aware). User presets live in localStorag
 `{ version, id, name, effect, params, createdAt }` with `params` as REAL values keyed by param
 id: the app params plus that effect's params. The shape did not change in M7, so the schema
 stays 1; a stored or imported preset without `effect` is an Ink preset (all M6 presets were),
-and stored presets of unknown effects are kept but not shown. Loading resolves a preset over the defaults: unknown ids are ignored, missing or
+and stored presets of unknown effects are kept but not shown. An effect's `migrate` rewrites
+renamed ids on read and import (Smoke `mode` light / dark -> `blend` multiply / screen, M11). Loading resolves a preset over the defaults: unknown ids are ignored, missing or
 invalid values come from the defaults, and the store clamps and snaps. Save overwrites a
 user preset of the same name; "Default" is reserved. Storage failures fall back to memory.
 
@@ -491,4 +569,7 @@ M3-M5b ink effect, trails, audio response. M6 0..10 panel scale, presets (localS
 JSON file), output checks, "Visualizer" title. M7 effect selector, per-effect params and presets,
 shared effect infrastructure, Smoke effect (light paper / dark). M8-M9 Smoke rebuilds.
 M10 TE UI: full-window canvas, floating panel / keys / transport, light and dark UI themes,
-dials, OLED display. Next: performance tiers, mobile sheet, REC CLIP.
+dials, OLED display. M11 UI refinements: +1 px type, warm dark deck, keyboard-only focus rings,
+static dials, eased transitions, overlay scroll bar with edge fades, canvas follows LT / DRK
+(lightness mirror + Blend mode), Ink Screen composite, Smoke Mode -> Blend mode, looping media,
+per-family transport, SYSTEM AUDIO labels. Next: performance tiers, mobile sheet, REC CLIP.

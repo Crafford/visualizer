@@ -84,6 +84,14 @@ void main() {
  * indigo over oxblood gives a dark violet-brown, not an average or an overlay; overlapping
  * ink is also denser (a adds), so it gets darker. With all three colours equal this reduces
  * to M4 exactly.
+ *
+ * Blend mode Screen (uScreen, M11): additive light for dark paper. The density then carries
+ * ink x the source's sRGB colour (not its absorbance), so rgb / a is the mean ink colour of a
+ * layer. Coverage is exactly Multiply's (line and wash optical density, the wash capped at
+ * uWashMax, glazes, contrast S-curve); the colour is the coverage-weighted mean of the two
+ * layers; result = paper + (1 - paper) x colour x coverage, with the same paper texture and
+ * grain. An ink at full coverage shows exactly its swatch colour. The Multiply branch is
+ * unchanged.
  */
 export const COMPOSITE_FRAG = /* glsl */ `
 precision highp float;
@@ -92,6 +100,7 @@ precision highp sampler2D;
 
 uniform sampler2D uLine;
 uniform sampler2D uWash;
+uniform bool  uScreen;    // blend mode: false = Multiply (ink on paper), true = Screen (light)
 uniform float uExposure;
 uniform float uWashGain;  // wash gain
 uniform float uWashMax;   // wash alone never gets darker than this
@@ -138,6 +147,26 @@ void main() {
   ivec2 px = ivec2(gl_FragCoord.xy);
   vec4 L = max(texelFetch(uLine, px, 0), 0.0);
   vec4 W = max(texelFetch(uWash, px, 0), 0.0);
+  if (uScreen) {
+    // Same coverage as Multiply (a channels, glazes, S-curve); colour = mean ink colour per
+    // layer (rgb / a), layers weighted by coverage; light added over the paper.
+    float line = 1.0 - exp(-L.a * uExposure);
+    float wash = uWashMax * (1.0 - exp(-W.a * uWashGain * uExposure / uWashMax));
+    float ink = 1.0 - (1.0 - line) * (1.0 - wash);
+    ink = clamp(contrastCurve(ink, uContrast, uPivot), 0.0, 1.0);
+    vec3 cLine = L.rgb / max(L.a, 1e-6);
+    vec3 cWash = W.rgb / max(W.a, 1e-6);
+    vec3 inkCol = clamp((cLine * line + cWash * wash) / max(line + wash, 1e-6), 0.0, 1.0);
+    vec2 q = gl_FragCoord.xy * uPaperScale;
+    float tex = (vnoise(q) + 0.5 * vnoise(q * 2.3 + 17.0)) / 1.5 - 0.5;
+    vec3 paper = uPaper * (1.0 + tex * 2.0 * uPaperTex);
+    vec3 col = paper + (1.0 - paper) * inkCol * ink;
+    uvec2 cell = uvec2(gl_FragCoord.xy / uGrainCell);
+    float n = hash01(uvec3(cell, uFrame)) - 0.5;
+    col += n * uGrain * (0.07 + 0.38 * (4.0 * ink * (1.0 - ink)));
+    outColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+    return;
+  }
   vec2 t = vec2(L.a, W.a);
   // Optical density: dense regions approach full ink smoothly instead of clipping.
   // Lines can reach solid ink; the wash saturates at a mid grey, so veils stay soft and

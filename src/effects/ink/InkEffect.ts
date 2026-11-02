@@ -192,6 +192,11 @@ export class InkEffect implements Effect<InkParams> {
   private bufferSize = new THREE.Vector2();
 
   onParamChange(id: string, params: Readonly<InkParams>): void {
+    if (id === 'blend') {
+      // Multiply splats absorbance, Screen splats colour: start the trails over.
+      this.trails.clear();
+      return;
+    }
     if (id !== 'particleCount') return;
     this.sim.allocate(params.particleCount);
     this.geometry.setDrawRange(0, 2 * params.particleCount);
@@ -310,16 +315,22 @@ export class InkEffect implements Effect<InkParams> {
     renderer.autoClear = prevAutoClear;
   }
 
-  /** Source colours -> absorbance (-ln of the sRGB value), parsed only on change. */
+  /**
+   * Source colours -> the per-source vector the particles splat, parsed only on change:
+   * absorbance (-ln of the sRGB value) for Multiply, the sRGB colour itself for Screen.
+   */
   private updateAbsorb(params: Readonly<InkParams>): void {
     const hex = [params.inkColor1, params.inkColor2, params.inkColor3];
+    const screen = params.blend === 'screen';
     for (let i = 0; i < MAX_ATTRACTORS; i++) {
-      if (hex[i] === this.inkHex[i]) continue;
-      this.inkHex[i] = hex[i];
+      const key = screen ? `s${hex[i]}` : hex[i];
+      if (key === this.inkHex[i]) continue;
+      this.inkHex[i] = key;
       // Raw shader output is not colour-managed: work on the sRGB values the swatch shows.
       const c = this.tmpColor.set(hex[i]).convertLinearToSRGB();
       const k = (x: number) => -Math.log(Math.min(1, Math.max(x, 0.01)));
-      this.absorb[i].set(k(c.r), k(c.g), k(c.b));
+      if (screen) this.absorb[i].set(c.r, c.g, c.b);
+      else this.absorb[i].set(k(c.r), k(c.g), k(c.b));
     }
   }
 
