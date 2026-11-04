@@ -134,9 +134,11 @@ export function createInputSection(engine: AudioEngine): Component {
     for (const [k, el] of Object.entries(panes)) el.hidden = k !== tab;
     say('');
   };
-  const keys = createKeyGroup<InputTab>(TABS, 'upload', show, 'Audio input', { cls: 'key-row key-row-4' });
+  const keys = createKeyGroup<InputTab>(TABS, 'capture', show, 'Audio input', { cls: 'key-row key-row-4' });
   const select = (tab: InputTab) => { keys.set(tab); show(tab); };
-  show('upload');
+  // CAP is selected on load (its idle pane: START CAPTURE + hint). Selecting never starts a
+  // source; capture still needs the START CAPTURE click. Not persisted.
+  show('capture');
   // A source started elsewhere (drop, preset of another source...) selects its key.
   let lastSource: SourceKind | null = null;
   d.add(engine.on('state', (s) => {

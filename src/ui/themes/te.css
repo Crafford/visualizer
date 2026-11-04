@@ -10,10 +10,10 @@
   /* Page behind the canvas (only visible before the first frame) */
   --page-bg: #F7F7F5;
 
-  /* Panel card. The fill is 95% opaque (M13). The shadow lists of the panel and the floating
+  /* Panel card. The fill is 90% opaque (M14; the key face the card morphs into stays opaque). The shadow lists of the panel and the floating
      key have the same shape (outer, outer, inset, outer) so the minimize morph interpolates
      them; the empty slots are transparent. */
-  --panel-bg: linear-gradient(180deg, rgba(226, 226, 222, 0.95) 0%, rgba(211, 211, 206, 0.95) 100%);
+  --panel-bg: linear-gradient(180deg, rgba(226, 226, 222, 0.9) 0%, rgba(211, 211, 206, 0.9) 100%);
   --panel-border: #B8B8B3;
   --panel-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent, inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 20px 40px -8px rgba(0, 0, 0, 0.14);
   --scroll-thumb: rgba(107, 107, 102, 0.55);   /* --muted, softened */
@@ -60,11 +60,11 @@
   --oled-hot-off: #4A2414;
   --oled-blue: #2D6BEB;
   --oled-green: #1FAE5B;
-  /* Recessed OLED wells (M13). Display 84:11269: drop shadow 0 2 0 spread 3 #FFF 90% (a white
-     lip 1 px at the top, 3 px at the sides, 5 px at the bottom) + inner 0 1 0 #FFF 6%.
+  /* Recessed OLED wells (M13). Display 84:11269: drop shadow 0 2 0 0 #FFF 90% (M14: 2 px on y
+     only, no spread, no blur) + inner 0 1 0 #FFF 6%.
      Fields and the preset list (84:12057, 84:11954, 84:11979): 0 2 0 spread 2 #FFF 90%.
      Transport strip (139:15): 0 1 0 #FFF 90%, no spread. */
-  --oled-frame: 0 2px 0 3px rgba(255, 255, 255, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --oled-frame: 0 2px 0 0 rgba(255, 255, 255, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --field-frame: 0 2px 0 2px rgba(255, 255, 255, 0.9);
   --strip-frame: 0 1px 0 rgba(255, 255, 255, 0.9);
   --tooltip-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
@@ -88,8 +88,7 @@
   --swatch-border: #A6A6A1;
   --swatch-shine: rgba(255, 255, 255, 0.9);
 
-  /* Floating keys (84:18476 / 140:5): bare keys with an LED, and transport plate */
-  --float-led: block;
+  /* Floating keys (84:18476 / 140:5): bare keys, no LED (M14), and transport plate */
   --float-key-bg: var(--key-bg);
   --float-key-border: var(--key-border);
   --float-key-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.22), 0 4px 6px 0 rgba(0, 0, 0, 0.12), inset 0 0.5px 0 #FFFFFF, 0 10px 24px 0 rgba(0, 0, 0, 0.14);
@@ -104,9 +103,9 @@
   --page-bg: #0B0B0C;
 
   /* Warm dark grey deck (137:6): solid #3F3D3A (M13: the lightest value of the M12 gradient),
-     95% opaque, with keys set darker than the deck. White text is #F2F2EE at 82% (secondary
+     85% opaque (M14), with keys set darker than the deck. White text is #F2F2EE at 82% (secondary
      55%) so it is not harsh. */
-  --panel-bg: rgba(63, 61, 58, 0.95);
+  --panel-bg: rgba(63, 61, 58, 0.85);
   --panel-border: #282624;
   --panel-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent, inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 20px 40px -8px rgba(0, 0, 0, 0.40);
   --scroll-thumb: rgba(242, 242, 238, 0.32);
@@ -150,10 +149,11 @@
   --oled-hot-off: #4A2414;
   --oled-blue: #2D6BEB;
   --oled-green: #1FAE5B;
-  /* Wells (M13): a 1 px #262422 outside stroke, and the lip shadow cast by stroke + fill, so its
-     spread is the design's + 1 px (display 137:16: 0 2 0 s3 #FFF 7%; fields and preset list
+  /* Wells (M13): a 1 px #262422 outside stroke and a white lip. Display 137:16 (M14):
+     0 2 0 0 #FFF 7% (2 px on y only, no spread). Fields and preset list keep the lip cast by
+     stroke + fill, spread = design's + 1 px (
      137:814 / 137:711 / 137:736: 0 2 0 s2 #FFF 7%). */
-  --oled-frame: 0 0 0 1px #262422, 0 2px 0 4px rgba(255, 255, 255, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --oled-frame: 0 0 0 1px #262422, 0 2px 0 0 rgba(255, 255, 255, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --field-frame: 0 0 0 1px #262422, 0 2px 0 3px rgba(255, 255, 255, 0.07);
   --strip-frame: inset 0 0 0 1px #262422;
   --tooltip-shadow: 0 4px 8px rgba(0, 0, 0, 0.45);
@@ -173,11 +173,10 @@
   --tick-off: #5E5C58;
 
   --swatch-border: #1F1E1C;
-  --swatch-shine: rgba(255, 255, 255, 0.28);
+  --swatch-shine: rgba(255, 255, 255, 0.9);
 
   /* Floating keys (84:18645 / 140:120): bare keys, no plate, no LED. */
   --float-key-bg: var(--key-bg);
-  --float-led: none;
   --float-key-border: #1F1E1C;
   --float-key-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.50), 0 4px 6px 0 rgba(0, 0, 0, 0.30), inset 0 0.5px 0 rgba(255, 255, 255, 0.14), 0 0 0 0 transparent;
   /* Transport plate: the deck colour, solid (M13), fully opaque. */

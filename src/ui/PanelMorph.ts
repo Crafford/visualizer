@@ -48,11 +48,10 @@ interface OpenBox { w: number; h: number; sw: number; sh: number; ix: number; iy
  */
 export function createPanelMorph(card: HTMLElement, scroller: HTMLElement, headIcon: Element, onKey: () => void): PanelMorph {
   const icon = h('span', { class: 'panel-key-icon' }, svg(ICONS.sidebar));
-  const led = h('span', { class: 'led', 'aria-hidden': 'true' });
   const key = h('button', {
     type: 'button', class: 'panel-key', 'aria-label': 'Show panel', 'aria-controls': card.id,
     'aria-expanded': 'false', 'data-tip': 'Show panel (H)', onclick: () => onKey(),
-  }, led, icon);
+  }, icon);
   const face = h('div', { class: 'panel-face', 'aria-hidden': 'true' });
   card.append(face, key);
   // The 1 px border around the key's hit area.
@@ -91,7 +90,6 @@ export function createPanelMorph(card: HTMLElement, scroller: HTMLElement, headI
     key.setAttribute('aria-expanded', String(open));
     // Live while minimised and while morphing (a click mid-way reverses).
     key.toggleAttribute('inert', open && !anims.length);
-    card.classList.toggle('is-on', open);
   };
 
   const pinContents = (b: OpenBox) => {
@@ -145,7 +143,6 @@ export function createPanelMorph(card: HTMLElement, scroller: HTMLElement, headI
         card.animate([{ ...big, offset: 0 }, { ...big, offset: morphStart, easing: EASE }, { ...small, offset: 1 }], opts),
         scroller.animate([{ opacity: 1, easing: FADE_OUT }, { opacity: 0, offset: fadeEnd }, { opacity: 0 }], opts),
         face.animate([{ opacity: 0 }, { opacity: 0, offset: morphStart, easing: EASE }, { opacity: 1, offset: 0.85 }, { opacity: 1 }], opts),
-        led.animate([{ opacity: 0 }, { opacity: 0, offset: 0.6 }, { opacity: 1 }], opts),
         icon.animate([
           { transform: iconOpen, opacity: iconOp }, { transform: iconOpen, opacity: 1, offset: morphStart, easing: EASE },
           { transform: iconKey, opacity: 1 }], opts),
@@ -155,7 +152,6 @@ export function createPanelMorph(card: HTMLElement, scroller: HTMLElement, headI
         card.animate([{ ...small, offset: 0, easing: EASE }, { ...big, offset: morphEnd }, { ...big, offset: 1 }], opts),
         scroller.animate([{ opacity: 0 }, { opacity: 0, offset: contentsIn, easing: EASE }, { opacity: 1 }], opts),
         face.animate([{ opacity: 1, easing: EASE }, { opacity: 0, offset: 0.55 }, { opacity: 0 }], opts),
-        led.animate([{ opacity: 1 }, { opacity: 0, offset: 0.3 }, { opacity: 0 }], opts),
         icon.animate([
           { transform: iconKey, opacity: 1, easing: EASE }, { transform: iconOpen, opacity: 1, offset: morphEnd },
           { transform: iconOpen, opacity: iconOp }], opts),

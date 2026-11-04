@@ -109,11 +109,6 @@ h1, h2, p { margin: 0; font-weight: inherit; font-size: inherit; }
   position: absolute; left: 0; top: 0; width: 16px; height: 16px; display: block;
   transform: translate(var(--icon-x, 20px), var(--icon-y, 14.5px));
 }
-.panel-key .led {
-  display: var(--float-led); position: absolute; top: 5px; left: 5px; opacity: 0;
-  width: var(--led); height: var(--led); border-radius: 50%; background: var(--led-off);
-}
-.panel.is-on .panel-key .led { background: var(--accent); box-shadow: var(--accent-glow); }
 .panel.is-morphing .panel-key, .panel.is-min .panel-key { visibility: visible; }
 /* While morphing and minimised the contents keep their open size (and scroll position);
    the card clips them. */
@@ -126,7 +121,7 @@ h1, h2, p { margin: 0; font-weight: inherit; font-size: inherit; }
   box-shadow: var(--float-key-shadow);
 }
 .panel.is-min .panel-scroll { visibility: hidden; opacity: 0; }
-.panel.is-min .panel-face, .panel.is-min .panel-key .led { opacity: 1; }
+.panel.is-min .panel-face { opacity: 1; }
 .panel.is-min .panel-key-icon {
   transform: translate(calc((var(--float-key) - 2px - 16px) / 2), calc((var(--float-key) - 2px - 16px) / 2));
 }
@@ -462,7 +457,10 @@ input.oled-field:focus { outline: none; }
 .swatch { display: flex; flex-direction: column; gap: 5px; width: 45.8px; flex: none; }
 .swatch-key {
   position: relative; display: block; height: 20px; border-radius: var(--key-r);
-  box-shadow: inset 0 0 0 1px var(--swatch-border), inset 0 -1px 0 var(--swatch-shine);
+  /* 1 px inside stroke as a real border, so the highlight (inner shadow 0 -1 #FFF 90%, M14)
+     paints inside it, on the colour, instead of under an inset stroke ring (where M13 hid it). */
+  border: 1px solid var(--swatch-border);
+  box-shadow: inset 0 -1px 0 0 var(--swatch-shine);
   cursor: pointer;
   transition: background-color var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui), filter var(--t-ui) var(--ease-ui);
 }
@@ -506,11 +504,6 @@ input.oled-field:focus { outline: none; }
 .float-key:hover::before { background-color: var(--key-hover); }
 .float-key:active { box-shadow: var(--key-press-shadow); transform: translateY(1px); transition-duration: var(--t-press); }
 .float-key:active::before { background-color: var(--key-press); transition-duration: var(--t-press); }
-.float-key .led {
-  display: var(--float-led); position: absolute; top: 5px; left: 5px;
-  width: var(--led); height: var(--led); border-radius: 50%; background: var(--led-off);
-}
-.float-plate.is-on .led { background: var(--accent); box-shadow: var(--accent-glow); }
 /* Focus (141:435): the ring sits 5 px out from the key (58 px box). */
 .float-key:focus-visible { outline-offset: 3.5px; }
 

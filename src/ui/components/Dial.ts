@@ -23,7 +23,7 @@ export const chipText = (t: string) => t.replace('×', 'X').toUpperCase();
  * lit up to the value), a sunk well, a coloured cap with a pointer, the short legend and a
  * value chip. Works on the param's panel scale (0..10 for norm10 params) via uiScale.
  *
- * Input: vertical drag (Shift = fine), wheel, arrow keys / PageUp / PageDown / Home / End
+ * Input: vertical drag (Shift = fine, touch too), arrow keys / PageUp / PageDown / Home / End
  * (Shift = x10) on the visually hidden native range input that carries focus and
  * accessibility, double-click resets, click the chip to type a value (Enter / Escape).
  */
@@ -52,7 +52,7 @@ export function createDial(def: NumberParamDef, store: ParamStore, legend: strin
   const pointer = s('svg', { class: 'dial-pointer', width: 58, height: 58, viewBox: '0 0 58 58', 'aria-hidden': 'true' });
   pointer.append(s('line', { x1: 29, y1: 11.4, x2: 29, y2: 19.2, 'stroke-width': 2.5 }));
 
-  const enc = h('div', { class: `dial-enc cap-${cap}`, title: `${def.label}: drag, scroll or use arrow keys. Double-click resets.` },
+  const enc = h('div', { class: `dial-enc cap-${cap}`, title: `${def.label}: drag or use arrow keys. Double-click resets.` },
     ring,
     h('span', { class: 'dial-well' }),
     h('span', { class: 'dial-knob' }, h('span', { class: 'dial-cap' }), pointer),
@@ -123,18 +123,7 @@ export function createDial(def: NumberParamDef, store: ParamStore, legend: strin
   enc.addEventListener('pointerup', end);
   enc.addEventListener('pointercancel', end);
   enc.addEventListener('dblclick', () => store.set(id, store.defaultOf(id)));
-  let wheelAcc = 0;
-  enc.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    // A mouse notch (|delta| >= 50 in one event) is one step; trackpads send many small
-    // deltas, accumulated at one step per 40 px.
-    if (e.deltaMode === 0 && Math.abs(e.deltaY) < 50) wheelAcc += e.deltaY;
-    else wheelAcc = Math.sign(e.deltaY) * 40;
-    const steps = Math.trunc(wheelAcc / 40);
-    if (!steps) return;
-    wheelAcc -= steps * 40;
-    nudge(-steps * (e.shiftKey ? 10 : 1));
-  }, { passive: false });
+  // No wheel handling (M14): wheel / trackpad scroll over a dial scrolls the panel.
 
   // Type-in: the chip swaps for a text field.
   const openField = () => {
