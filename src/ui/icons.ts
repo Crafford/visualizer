@@ -3,12 +3,12 @@ const svg = (size: number, body: string, extra = '') =>
   `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" aria-hidden="true" ${extra}>${body}</svg>`;
 
 export const ICONS = {
-  /** Side panel: rounded rectangle with a divider on the left third (20 px). */
-  sidebar: svg(20, '<rect x="3.2" y="4.1" width="13.6" height="11.8" rx="2" stroke="currentColor" stroke-width="1.42"/><path d="M8 4.4v11.2" stroke="currentColor" stroke-width="1.42"/>'),
-  /** Fullscreen corners (20 px). */
-  fullscreen: svg(20, '<path d="M3.6 7.6V3.6h4M12.4 3.6h4v4M16.4 12.4v4h-4M7.6 16.4h-4v-4" stroke="currentColor" stroke-width="1.42"/>'),
-  /** Exit fullscreen: corners pointing inward (20 px). */
-  fullscreenExit: svg(20, '<path d="M7.6 3.6v4h-4M16.4 7.6h-4v-4M12.4 16.4v-4h4M3.6 12.4h4v4" stroke="currentColor" stroke-width="1.42"/>'),
+  /** Side panel (16 px, 137:10): 12x10 rounded rectangle, divider at x 6.5. */
+  sidebar: svg(16, '<rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M6.5 3v10" stroke="currentColor" stroke-width="1.3"/>'),
+  /** Fullscreen corners (16 px, 139:63): 11x11 box, 3.5 px arms, round caps. */
+  fullscreen: svg(16, '<path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>'),
+  /** Exit fullscreen: the same corners turned inward (16 px). */
+  fullscreenExit: svg(16, '<path d="M6 2.5V6H2.5M13.5 6H10V2.5M10 13.5V10h3.5M2.5 10H6v3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>'),
   /** Upload: arrow onto a base line (12 px). */
   upload: svg(12, '<path d="M6 8.2V2.4M3.4 5 6 2.4 8.6 5M2 10.2h8" stroke="currentColor" stroke-width="1.4"/>'),
   /** Record: ring + dot (12 px). */

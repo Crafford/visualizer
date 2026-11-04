@@ -28,6 +28,8 @@
   --dial-well: 46px;
   --dial-cap: 38px;
   --float-key: 48px;
+  /* Floating keys and the transport sit this far from the window edges (M12). */
+  --edge: 20px;
 
   /* Motion. State changes (hover, on, LED, theme colours) ease over --t-ui; press feedback
      is near-instant (--t-press) and releases over --t-ui. */

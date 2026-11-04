@@ -86,7 +86,7 @@ const panel = createPanel(store, engine, presets, EFFECTS, prefs, {
   hide: () => setPanel(false, true),
 });
 
-/** Floating key (design 84:18481 / 84:18538): plate, 48 px key, icon, LED. */
+/** Floating key (design 139:2 / 139:55): bare 48 px key with a 16 px icon; LED in LT only. */
 const floatKey = (cls: string, icon: string, label: string, tip: string, onClick: () => void) => {
   const btn = h('button', { type: 'button', class: 'float-key', 'aria-label': label, 'data-tip': tip, onclick: onClick },
     h('span', { class: 'led', 'aria-hidden': 'true' }), svg(icon));

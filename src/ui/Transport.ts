@@ -14,7 +14,7 @@ export interface TransportApi extends Component {
 }
 
 /**
- * Floating transport (design 84:18486, without the VOL encoder). Two source families:
+ * Floating transport (design 139:11 / 139:66 file, 140:19 / 140:136 LIVE; --edge from the bottom). Two source families:
  *
  * - File and link: a play/pause key and an OLED strip with the elapsed time, a 36-cell
  *   progress bar with an orange playhead cell (click or drag to seek; arrow keys +-5 s,

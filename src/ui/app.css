@@ -93,11 +93,18 @@ h1, h2, p { margin: 0; font-weight: inherit; font-size: inherit; }
 .panel-title { font: 500 var(--fs-title)/17px var(--f-mono); letter-spacing: var(--ls-title); color: var(--ink); }
 .panel-version { font: 400 var(--fs-key)/13px var(--f-mono); letter-spacing: var(--ls-label); color: var(--muted); }
 .icon-btn {
-  display: inline-grid; place-items: center; width: 24px; height: 24px; margin: -4px -2px -4px -4px; padding: 0;
+  position: relative;
+  display: inline-grid; place-items: center; flex: none; width: 16px; height: 24px; margin: -3.5px 0; padding: 0;
   border: 0; border-radius: 4px; background: transparent; color: var(--ink); cursor: pointer;
   transition: background-color var(--t-ui) var(--ease-ui), color var(--t-ui) var(--ease-ui);
 }
 .icon-btn:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+/* Focus (141:411): a 20 x 20 ring, r4, centred on the 16 px icon instead of the default ring. */
+.icon-btn:focus-visible { outline: none; }
+:root:not([data-input='pointer']) .icon-btn:focus-visible::after {
+  content: ''; position: absolute; inset: 2px -2px; pointer-events: none;
+  border: 1.5px solid var(--accent); border-radius: 4px;
+}
 
 /* Groups in the header: UI, Input, Visualization, Presets */
 .group { display: flex; flex-direction: column; gap: 6px; }
@@ -133,12 +140,12 @@ h1, h2, p { margin: 0; font-weight: inherit; font-size: inherit; }
   transition: background-color var(--t-ui) var(--ease-ui);
 }
 .key:hover:not([aria-disabled='true'])::before { background-color: var(--key-hover); }
-.key:active:not([aria-disabled='true']), .dropdown.is-open .dd-button {
+.key:active:not([aria-disabled='true']) {
   box-shadow: var(--key-press-shadow);
   transform: translateY(1px);
   transition-duration: var(--t-press);
 }
-.key:active:not([aria-disabled='true'])::before, .dropdown.is-open .dd-button::before {
+.key:active:not([aria-disabled='true'])::before {
   background-color: var(--key-press); transition-duration: var(--t-press);
 }
 .key[aria-disabled='true'] { opacity: 0.45; cursor: default; }
@@ -163,7 +170,7 @@ h1, h2, p { margin: 0; font-weight: inherit; font-size: inherit; }
 }
 .key-primary:hover:not([aria-disabled='true'])::before { background-color: var(--primary-hover); }
 .key-primary:active:not([aria-disabled='true'])::before { background-color: var(--key-press); }
-.key-primary:active:not([aria-disabled='true']) { box-shadow: var(--key-press-shadow); }
+.key-primary:active:not([aria-disabled='true']) { box-shadow: var(--primary-press-shadow); }
 .key-wide { width: 146px; flex: none; }
 
 /* ---------------------------------------------------------------- dropdown */
@@ -171,11 +178,13 @@ h1, h2, p { margin: 0; font-weight: inherit; font-size: inherit; }
 .dd-button { width: 100%; justify-content: space-between; gap: 8px; padding: 0 8px 0 10px; text-align: left; }
 .dd-text { overflow: hidden; text-overflow: ellipsis; }
 .dd-chevron { display: inline-flex; flex: none; }
-.dropdown.is-open .dd-button, :root:not([data-input='pointer']) .dd-button:focus-visible {
-  outline: none; border-color: var(--accent);
-  box-shadow: inset 0 0 0 0.5px var(--accent), var(--key-shadow);
-}
-.dropdown.is-open .dd-button { box-shadow: inset 0 0 0 0.5px var(--accent), var(--key-press-shadow); }
+/* Open (component states, "active (open)"): raised as default, 1.5 px orange border.
+   Pressed: press shading with the same border. Keyboard focus (141:452): the border turns
+   orange, no outer ring. */
+.dd-button:focus-visible { outline: none; }
+.dropdown.is-open .dd-button, :root:not([data-input='pointer']) .dd-button:focus-visible { border-color: var(--accent); }
+.dropdown.is-open .dd-button { box-shadow: inset 0 0 0 0.5px var(--accent), var(--key-shadow); }
+.dropdown.is-open .dd-button:active { box-shadow: inset 0 0 0 0.5px var(--accent), var(--key-press-shadow); }
 .dd-list {
   position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; right: 0;
   max-height: 240px; overflow-y: auto;
@@ -351,17 +360,20 @@ input.oled-field:focus { outline: none; }
 .dial-pointer { transform-origin: 29px 28px; }
 .dial-pointer line { stroke: var(--pointer-on-dark); }
 .cap-orange .dial-cap { background-color: var(--cap-orange); }
-.cap-grey .dial-cap { background-color: var(--cap-grey); }
+.cap-grey .dial-cap { background-color: var(--cap-grey); box-shadow: var(--cap-grey-shadow); }
 .cap-grey .dial-pointer line { stroke: var(--pointer-on-light); }
 .dial-enc.is-turning .dial-cap { box-shadow: var(--cap-shadow-hover); }
+.dial-enc.cap-grey.is-turning .dial-cap { box-shadow: var(--cap-grey-shadow-hover); }
 .dial-enc.is-turning .dial-cap::after { opacity: 1; }
 @media (hover: hover) {
   .dial-enc:hover .dial-cap { box-shadow: var(--cap-shadow-hover); }
+  .dial-enc.cap-grey:hover .dial-cap { box-shadow: var(--cap-grey-shadow-hover); }
   .dial-enc:hover .dial-cap::after { opacity: 1; }
 }
 .dial-well { transition: box-shadow var(--t-ui) var(--ease-ui); }
-/* Keyboard focus only: never after a tap, click or drag, never on touch-first devices. */
-:root[data-input='keyboard'] .dial-enc:has(input:focus-visible) .dial-well { box-shadow: var(--well-shadow), 0 0 0 2px var(--accent); }
+/* Keyboard focus only: never after a tap, click or drag, never on touch-first devices.
+   141:498: a 1 px orange border around the socket. */
+:root[data-input='keyboard'] .dial-enc:has(input:focus-visible) .dial-well { box-shadow: var(--well-shadow), 0 0 0 1px var(--accent); }
 @media (pointer: coarse) {
   :root[data-input='keyboard'] .dial-enc:has(input:focus-visible) .dial-well { box-shadow: var(--well-shadow); }
 }
@@ -402,7 +414,7 @@ input.oled-field:focus { outline: none; }
 .swatch { display: flex; flex-direction: column; gap: 5px; width: 45.8px; flex: none; }
 .swatch-key {
   position: relative; display: block; height: 20px; border-radius: var(--key-r);
-  box-shadow: inset 0 0 0 1px var(--swatch-border), inset 0 -1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 0 0 1px var(--swatch-border), inset 0 -1px 0 var(--swatch-shine);
   cursor: pointer;
   transition: background-color var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui), filter var(--t-ui) var(--ease-ui);
 }
@@ -426,16 +438,14 @@ input.oled-field:focus { outline: none; }
 }
 
 /* ---------------------------------------------------------------- floating keys */
+/* M12 (84:18476 / 84:18645): bare 48 px keys, no plate, --edge from the window edges.
+   The wrapper only positions and fades the key. */
 .float-plate {
-  position: fixed; z-index: 11; top: 24px;
-  padding: 6px; border-radius: 10px;
-  border: 1px solid var(--float-plate-border);
-  background: var(--float-plate-bg);
-  box-shadow: var(--float-plate-shadow);
+  position: fixed; z-index: 11; top: var(--edge);
   transition: opacity var(--t-panel) var(--ease), transform var(--t-panel) var(--ease), visibility 0s linear 0s;
 }
-.float-panel { left: 24px; }
-.float-fullscreen { right: 24px; }
+.float-panel { left: var(--edge); }
+.float-fullscreen { right: var(--edge); }
 .shell.panel-open .float-panel {
   opacity: 0; transform: translateX(-6px); visibility: hidden; pointer-events: none;
   transition: opacity var(--t-panel) var(--ease), transform var(--t-panel) var(--ease), visibility 0s linear var(--t-panel);
@@ -454,10 +464,12 @@ input.oled-field:focus { outline: none; }
 .float-key:active { box-shadow: var(--key-press-shadow); transform: translateY(1px); transition-duration: var(--t-press); }
 .float-key:active::before { background-color: var(--key-press); transition-duration: var(--t-press); }
 .float-key .led {
-  position: absolute; top: 5px; left: 5px;
+  display: var(--float-led); position: absolute; top: 5px; left: 5px;
   width: var(--led); height: var(--led); border-radius: 50%; background: var(--led-off);
 }
 .float-plate.is-on .led { background: var(--accent); box-shadow: var(--accent-glow); }
+/* Focus (141:435): the ring sits 5 px out from the key (58 px box). */
+.float-key:focus-visible { outline-offset: 3.5px; }
 
 /* ---------------------------------------------------------------- transport */
 .plate {
@@ -465,7 +477,7 @@ input.oled-field:focus { outline: none; }
   background: var(--plate-bg); box-shadow: var(--plate-shadow);
 }
 .transport {
-  position: fixed; z-index: 11; bottom: 24px; left: 50%; transform: translateX(-50%);
+  position: fixed; z-index: 11; bottom: var(--edge); left: 50%; transform: translateX(-50%);
   display: flex; align-items: center; gap: 6px; padding: 6px; max-width: calc(100vw - 32px);
   transition: opacity var(--t-panel) var(--ease), visibility 0s linear 0s;
 }
