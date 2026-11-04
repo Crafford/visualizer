@@ -173,7 +173,7 @@
   --tick-off: #5E5C58;
 
   --swatch-border: #1F1E1C;
-  --swatch-shine: rgba(255, 255, 255, 0.9);
+  --swatch-shine: rgba(255, 255, 255, 0.28);
 
   /* Floating keys (84:18645 / 140:120): bare keys, no plate, no LED. */
   --float-key-bg: var(--key-bg);

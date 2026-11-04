@@ -457,10 +457,9 @@ input.oled-field:focus { outline: none; }
 .swatch { display: flex; flex-direction: column; gap: 5px; width: 45.8px; flex: none; }
 .swatch-key {
   position: relative; display: block; height: 20px; border-radius: var(--key-r);
-  /* 1 px inside stroke as a real border, so the highlight (inner shadow 0 -1 #FFF 90%, M14)
-     paints inside it, on the colour, instead of under an inset stroke ring (where M13 hid it). */
-  border: 1px solid var(--swatch-border);
-  box-shadow: inset 0 -1px 0 0 var(--swatch-shine);
+  /* Figma 84:11777 / 137:534: 1 px inside stroke, inner shadow 0 -1 white on top of it, so the
+     stroke's bottom row is replaced by the highlight (first inset shadow paints on top). */
+  box-shadow: inset 0 -1px 0 0 var(--swatch-shine), inset 0 0 0 1px var(--swatch-border);
   cursor: pointer;
   transition: background-color var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui), filter var(--t-ui) var(--ease-ui);
 }
