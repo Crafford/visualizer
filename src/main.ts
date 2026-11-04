@@ -144,6 +144,27 @@ const syncFullscreen = () => {
 };
 document.addEventListener('fullscreenchange', syncFullscreen);
 
+/**
+ * Keep the screen awake (no dimming, sleep or screen saver) while in fullscreen.
+ * The browser drops the lock when the tab is hidden, so it is re-requested on return.
+ */
+let wakeLock: WakeLockSentinel | null = null;
+const syncWakeLock = async () => {
+  const want = !!document.fullscreenElement && document.visibilityState === 'visible';
+  if (want && !wakeLock && 'wakeLock' in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch { /* unsupported, denied or low battery: the screen saver behaves as usual */ }
+  } else if (!want && wakeLock) {
+    const l = wakeLock;
+    wakeLock = null;
+    void l.release();
+  }
+};
+document.addEventListener('fullscreenchange', () => void syncWakeLock());
+document.addEventListener('visibilitychange', () => void syncWakeLock());
+
 installTooltips();
 
 try {
