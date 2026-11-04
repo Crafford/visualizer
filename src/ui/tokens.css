@@ -19,7 +19,6 @@
 
   /* Geometry */
   --panel-w: 340px;
-  --panel-inset: 24px;
   --pad-x: 20px;
   --key-h: 30px;
   --key-r: 5px;
@@ -28,8 +27,11 @@
   --dial-well: 46px;
   --dial-cap: 38px;
   --float-key: 48px;
-  /* Floating keys and the transport sit this far from the window edges (M12). */
+  /* The panel, the floating keys and the transport sit this far from the window edges (M12, M13). */
   --edge: 20px;
+  /* Panel minimize morph (M13): contents fade, then the card shrinks into the show key. */
+  --card-r: 14px;
+  --float-key-r: 6px;
 
   /* Motion. State changes (hover, on, LED, theme colours) ease over --t-ui; press feedback
      is near-instant (--t-press) and releases over --t-ui. */

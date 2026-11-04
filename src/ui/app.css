@@ -34,18 +34,22 @@ h1, h2, p { margin: 0; font-weight: inherit; font-size: inherit; }
 .stage-error { position: absolute; inset: auto 0 50% 0; text-align: center; color: var(--muted); }
 
 /* ---------------------------------------------------------------- floating panel */
+/* The card sits --edge from the top left. Hidden, it is the show-panel key: PanelMorph.ts fades
+   the contents, then shrinks the card (width / height, so corners, border and shadow stay
+   crisp) to the 48 px floating key anchored at the same top left (.is-min), and reverses that
+   to show it. */
 .panel {
   position: fixed; z-index: 10;
-  top: var(--panel-inset); left: var(--panel-inset);
+  top: var(--edge); left: var(--edge);
   width: var(--panel-w);
-  max-height: calc(100dvh - 2 * var(--panel-inset));
+  max-height: calc(100dvh - 2 * var(--edge));
   display: flex; flex-direction: column;
   overflow: hidden;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 14px;
+  border-radius: var(--card-r);
   box-shadow: var(--panel-shadow);
-  transition: opacity var(--t-panel) var(--ease), transform var(--t-panel) var(--ease), visibility 0s linear 0s;
+  transition: border-color var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui), transform var(--t-ui) var(--ease-ui);
 }
 /* The content scrolls inside the card. The native scroll bar is hidden; an overlay thumb
    (Panel.ts) fades in while the pointer is over the panel. Soft fade masks at the top and
@@ -83,10 +87,54 @@ h1, h2, p { margin: 0; font-weight: inherit; font-size: inherit; }
 .panel-scrollbar.is-dragging, .panel-scrollbar.is-scrolling.is-needed { opacity: 1; }
 .panel-scrollbar.is-dragging .panel-thumb { pointer-events: auto; background: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .panel-scrollbar { transition: none; } }
-.shell:not(.panel-open) .panel {
-  opacity: 0; transform: translateX(-12px); visibility: hidden;
-  transition: opacity var(--t-panel) var(--ease), transform var(--t-panel) var(--ease), visibility 0s linear var(--t-panel);
+
+/* Key face (the floating key's fill) and the key itself, over the contents. Hidden while open. */
+.panel-face {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: var(--float-key-bg); opacity: 0;
 }
+.panel-face::before {
+  content: ''; position: absolute; inset: 0; background-color: transparent;
+  transition: background-color var(--t-ui) var(--ease-ui);
+}
+.panel-key {
+  position: absolute; inset: 0; z-index: 2; margin: 0; padding: 0;
+  border: 0; background: transparent; color: var(--key-fg); cursor: pointer;
+  visibility: hidden; -webkit-tap-highlight-color: transparent;
+}
+.panel-key:focus-visible { outline: none; }
+/* The sidebar icon: from the header button's spot (--icon-x / --icon-y, measured) to the centre
+   of the key. */
+.panel-key-icon {
+  position: absolute; left: 0; top: 0; width: 16px; height: 16px; display: block;
+  transform: translate(var(--icon-x, 20px), var(--icon-y, 14.5px));
+}
+.panel-key .led {
+  display: var(--float-led); position: absolute; top: 5px; left: 5px; opacity: 0;
+  width: var(--led); height: var(--led); border-radius: 50%; background: var(--led-off);
+}
+.panel.is-on .panel-key .led { background: var(--accent); box-shadow: var(--accent-glow); }
+.panel.is-morphing .panel-key, .panel.is-min .panel-key { visibility: visible; }
+/* While morphing and minimised the contents keep their open size (and scroll position);
+   the card clips them. */
+.panel.is-morphing .panel-scroll, .panel.is-min .panel-scroll { flex: none; }
+.panel.is-morphing .panel-scrollbar, .panel.is-min .panel-scrollbar { display: none; }
+.panel.is-morphing { transition: none; }
+.panel.is-min {
+  width: var(--float-key); height: var(--float-key);
+  border-color: var(--float-key-border); border-radius: var(--float-key-r);
+  box-shadow: var(--float-key-shadow);
+}
+.panel.is-min .panel-scroll { visibility: hidden; opacity: 0; }
+.panel.is-min .panel-face, .panel.is-min .panel-key .led { opacity: 1; }
+.panel.is-min .panel-key-icon {
+  transform: translate(calc((var(--float-key) - 2px - 16px) / 2), calc((var(--float-key) - 2px - 16px) / 2));
+}
+/* Minimised: the floating key's hover wash, press and focus ring (141:435, 5 px out, r9). */
+@media (hover: hover) { .panel.is-min:hover .panel-face::before { background-color: var(--key-hover); } }
+.panel.is-min:has(.panel-key:active) { box-shadow: var(--key-press-shadow); transform: translateY(1px); transition-duration: var(--t-press); }
+.panel.is-min:has(.panel-key:active) .panel-face::before { background-color: var(--key-press); transition-duration: var(--t-press); }
+:root:not([data-input='pointer']) .panel.is-min:has(.panel-key:focus-visible) { outline: 1.5px solid var(--accent); outline-offset: 3.5px; }
 
 .panel-head { display: flex; flex-direction: column; gap: 16px; padding: 14px var(--pad-x) 18px; }
 .title-row { display: flex; align-items: center; gap: 8px; height: 17px; }
@@ -439,17 +487,12 @@ input.oled-field:focus { outline: none; }
 
 /* ---------------------------------------------------------------- floating keys */
 /* M12 (84:18476 / 84:18645): bare 48 px keys, no plate, --edge from the window edges.
-   The wrapper only positions and fades the key. */
+   The wrapper only positions the key. The show-panel key is the minimised panel (M13). */
 .float-plate {
   position: fixed; z-index: 11; top: var(--edge);
   transition: opacity var(--t-panel) var(--ease), transform var(--t-panel) var(--ease), visibility 0s linear 0s;
 }
-.float-panel { left: var(--edge); }
 .float-fullscreen { right: var(--edge); }
-.shell.panel-open .float-panel {
-  opacity: 0; transform: translateX(-6px); visibility: hidden; pointer-events: none;
-  transition: opacity var(--t-panel) var(--ease), transform var(--t-panel) var(--ease), visibility 0s linear var(--t-panel);
-}
 .float-key {
   position: relative; isolation: isolate; display: grid; place-items: center;
   width: var(--float-key); height: var(--float-key); padding: 0;

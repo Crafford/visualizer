@@ -74,16 +74,17 @@ const setEffect = (id: string) => {
   stage?.setEffect(entry.create);
 };
 
-// ---- panel show / hide
+// ---- panel show / hide (the panel minimises into its own show key, PanelMorph.ts)
 const setPanel = (open: boolean, focus = false) => {
   prefs.set({ panel: open });
-  if (focus) (open ? panel.el.querySelector<HTMLElement>('.title-row .icon-btn') : showKey)?.focus({ preventScroll: true });
+  if (focus) (open ? panel.hideButton : panel.showKey).focus({ preventScroll: true });
 };
 
 const panel = createPanel(store, engine, presets, EFFECTS, prefs, {
   screenshot: () => void screenshot(),
   setEffect,
   hide: () => setPanel(false, true),
+  toggle: () => setPanel(!prefs.get().panel, true),
 });
 
 /** Floating key (design 139:2 / 139:55): bare 48 px key with a 16 px icon; LED in LT only. */
@@ -92,25 +93,20 @@ const floatKey = (cls: string, icon: string, label: string, tip: string, onClick
     h('span', { class: 'led', 'aria-hidden': 'true' }), svg(icon));
   return { el: h('div', { class: `float-plate ${cls}` }, btn), btn };
 };
-const show = floatKey('float-panel', ICONS.sidebar, 'Show panel', 'Show panel (H)', () => setPanel(true, true));
-const showKey = show.btn;
-show.btn.setAttribute('aria-controls', 'panel');
 const fs = floatKey('float-fullscreen', ICONS.fullscreen, 'Fullscreen', 'Fullscreen', toggleFullscreen);
 
-// The panel's layout box (its transform is only the show / hide slide).
-const transport = createTransport(engine, () => panel.el.offsetLeft + panel.el.offsetWidth);
-const shell = h('div', { class: 'shell' }, stageEl, panel.el, show.el, fs.el, transport.el);
+// The transport keeps clear of the open panel's box (its target size, also mid-morph).
+const transport = createTransport(engine, () => panel.openRight());
+const shell = h('div', { class: 'shell' }, stageEl, panel.el, fs.el, transport.el);
 root.append(shell);
 
+let firstPanel = true;
 prefs.watch((p) => {
   shell.classList.toggle('panel-open', p.panel);
-  panel.el.toggleAttribute('inert', !p.panel);
-  panel.el.setAttribute('aria-hidden', String(!p.panel));
-  show.el.toggleAttribute('inert', p.panel);
-  showKey.setAttribute('aria-expanded', String(p.panel));
-  panel.el.querySelector('.title-row .icon-btn')?.setAttribute('aria-expanded', String(p.panel));
-  // LED lit while the panel is open (it shows briefly during the cross-fade), unlit when closed.
-  show.el.classList.toggle('is-on', p.panel);
+  panel.setOpen(p.panel, firstPanel);
+  firstPanel = false;
+  panel.hideButton.setAttribute('aria-expanded', String(p.panel));
+  // The transport moves alongside the morph.
   transport.setPanelOpen(p.panel);
 });
 
@@ -185,8 +181,9 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyH' && !typing(e.target)) {
     e.preventDefault();
     const open = !prefs.get().panel;
-    // Keep focus somewhere visible when the focused control is about to hide.
-    setPanel(open, !open && panel.el.contains(document.activeElement));
+    // Keep focus somewhere visible: hiding from inside the panel lands on the show key,
+    // showing from the show key lands on the hide button.
+    setPanel(open, panel.el.contains(document.activeElement));
     return;
   }
   // Space toggles playback when focus is not in a control.

@@ -14,13 +14,26 @@ import { createPresetsSection } from './PresetsSection';
 import { capColour, dialRank, shortLabel } from './controlStyle';
 import { THEMES, type PrefsStore, type ThemeMode } from './themes';
 import { ICONS } from './icons';
+import { createPanelMorph, type PanelMorph } from './PanelMorph';
 
 export interface PanelActions {
   screenshot(): void;
   /** Switch the active effect (store, stage); the panel re-renders itself from the store. */
   setEffect(id: string): void;
-  /** Hide the panel (the floating key brings it back). */
+  /** Hide the panel (it minimises into the show key, which brings it back). */
   hide(): void;
+  /** The show key (the minimised panel) was activated; mid-morph this reverses the morph. */
+  toggle(): void;
+}
+
+export interface PanelApi extends Component {
+  /** Open or minimise (animated unless `instant`). */
+  setOpen(open: boolean, instant?: boolean): void;
+  /** The header hide button and the show key (focus targets). */
+  hideButton: HTMLButtonElement;
+  showKey: HTMLButtonElement;
+  /** Right edge of the open panel, px from the window's left (also while minimised). */
+  openRight(): number;
 }
 
 const VERSION = 'V0.3';
@@ -124,7 +137,7 @@ function section(sec: SectionDef, num: number | null): { el: HTMLElement; body: 
 export function createPanel(
   store: ParamStore, engine: AudioEngine, presets: PresetBank, effects: readonly EffectEntry[],
   prefs: PrefsStore, actions: PanelActions,
-): Component {
+): PanelApi {
   const d = new Disposer();
   const el = h('aside', { class: 'panel', id: 'panel', 'aria-label': 'Controls' });
   // The card stays put; its content scrolls in .panel-scroll (see installScroll).
@@ -213,8 +226,14 @@ export function createPanel(
   scroller.append(output.el);
   el.append(scroller);
   d.add(installScroll(el, scroller));
+  const morph: PanelMorph = createPanelMorph(el, scroller, hideBtn.firstElementChild!, actions.toggle);
+  d.add(morph.dispose);
 
-  return { el, dispose: () => d.dispose() };
+  return {
+    el, dispose: () => d.dispose(),
+    setOpen: morph.set, hideButton: hideBtn, showKey: morph.key,
+    openRight: () => el.offsetLeft + morph.openWidth(),
+  };
 }
 
 /**
