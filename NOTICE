@@ -25,21 +25,14 @@ work based on it.
       (https://github.com/Crafford/visualizer)" in the README or equivalent
       documentation of any work based on this program.
 
-2. Origin and modified versions (section 7(c)). You may not misrepresent the
-   origin of this program or claim it as your own original work. Modified
-   versions must be marked as modified, by stating in the NOTICE file and the
-   README that the work has been changed, by whom and when, and must not be
-   presented as the original program.
-
-3. Names (section 7(e)). This license grants no right to use the name
-   "Jaco Crafford", the name "VZ-01" or any associated name or logo to
-   identify, endorse or promote a modified version or a work based on this
-   program, except as required to give the attribution in term 1.
-
-4. Network use. AGPL-3.0 section 13 applies: if you run a modified version on
-   a server and let people interact with it over a network (for example,
-   hosting it as a website), you must offer those users the complete
-   corresponding source code of your version under this same license.
+2. Network use. If you host this program or a modified version of it as a
+   website or other network service, you must offer its users the complete
+   corresponding source code of the version you host, under this same
+   license, together with attribution to the original source and creator:
+   "Originally created by Jaco Crafford
+   (https://github.com/Crafford/visualizer)". This applies AGPL-3.0
+   section 13 to unmodified copies as well; the attribution is an author
+   attribution under section 7(b).
 
 
 THIRD-PARTY COMPONENTS

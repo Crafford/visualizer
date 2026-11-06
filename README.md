@@ -34,8 +34,6 @@ Licensed under the GNU Affero General Public License v3.0 only ([LICENSE](LICENS
 
 - You may use, study, change and share this code, including commercially.
 - Keep the NOTICE file, the copyright lines in the source files, and the line "Originally created by Jaco Crafford (https://github.com/Crafford/visualizer)" in your README.
-- Mark modified versions as modified, and don't present them as the original or as your own original work.
-- Don't use the names "Jaco Crafford" or "VZ-01" to promote a modified version.
-- If you host a modified version as a website or other network service, offer its complete source code to its users under this same license.
+- If you host this or a modified version as a website or other network service, offer its complete source code to its users under this same license, with attribution to the original source and creator.
 
 The LICENSE and NOTICE files are the binding text; this summary is not.
