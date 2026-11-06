@@ -5,14 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Visualizer</title>
     <script>
-      // Theme before the first paint (same rule as src/ui/themes.ts loadPrefs): the stored
-      // LT / DRK choice, else the system colour scheme. main.ts re-applies it.
+      // Theme before the first paint (same rule as src/ui/themes.ts loadPrefs): the mode is
+      // always the system colour scheme on load. main.ts re-applies it.
       (function () {
         var mode = 'light', theme = 'te';
         try { if (matchMedia('(prefers-color-scheme: dark)').matches) mode = 'dark'; } catch (e) {}
         try {
           var p = JSON.parse(localStorage.getItem('visualizer.ui.v2') || '{}');
-          if (p.mode === 'light' || p.mode === 'dark') mode = p.mode;
           if (p.theme === 'te') theme = p.theme;
         } catch (e) {}
         document.documentElement.dataset.theme = theme + '-' + mode;

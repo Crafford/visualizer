@@ -102,10 +102,9 @@
 
   --page-bg: #0B0B0C;
 
-  /* Warm dark grey deck (137:6): solid #3F3D3A (M13: the lightest value of the M12 gradient),
-     85% opaque (M14), with keys set darker than the deck. White text is #F2F2EE at 82% (secondary
-     55%) so it is not harsh. */
-  --panel-bg: rgba(63, 61, 58, 0.85);
+  /* Warm dark grey deck (137:6): #4A4846 at 85% (Jaco, Nov 6), with keys set darker than the deck.
+     White text is #F2F2EE at 82% (secondary 55%) so it is not harsh. */
+  --panel-bg: #4A4846D9;
   --panel-border: #282624;
   --panel-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent, inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 20px 40px -8px rgba(0, 0, 0, 0.40);
   --scroll-thumb: rgba(242, 242, 238, 0.32);
@@ -180,7 +179,7 @@
   --float-key-border: #1F1E1C;
   --float-key-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.50), 0 4px 6px 0 rgba(0, 0, 0, 0.30), inset 0 0.5px 0 rgba(255, 255, 255, 0.14), 0 0 0 0 transparent;
   /* Transport plate: the deck colour, solid (M13), fully opaque. */
-  --plate-bg: #3F3D3A;
+  --plate-bg: #4A4846;
   --plate-border: #282624;
   --plate-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
