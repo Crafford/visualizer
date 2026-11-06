@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 import {
   BLEND_OPTIONS, N10, N10_PERSIST, color, kilo, n10, num, secs, times, toggle,
   type AppParams, type ParamDef, type SectionDef, type ValuesOf,

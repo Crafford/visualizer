@@ -1,0 +1,54 @@
+VZ-01 Visualizer
+Copyright (C) 2026 Jaco Crafford
+https://github.com/Crafford/visualizer
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License version 3 (AGPL-3.0-only),
+included in the LICENSE file, together with the additional terms below.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+
+ADDITIONAL TERMS (AGPL-3.0, section 7)
+
+These terms apply to this program and to every copy, modified version and
+work based on it.
+
+1. Author attribution (section 7(b)). You must preserve, in all copies and
+   modified versions:
+   a. this NOTICE file, unchanged except for appending your own notices below
+      the line "Modifications";
+   b. the copyright and SPDX license lines at the top of the source files;
+   c. the attribution "Originally created by Jaco Crafford
+      (https://github.com/Crafford/visualizer)" in the README or equivalent
+      documentation of any work based on this program.
+
+2. Origin and modified versions (section 7(c)). You may not misrepresent the
+   origin of this program or claim it as your own original work. Modified
+   versions must be marked as modified, by stating in the NOTICE file and the
+   README that the work has been changed, by whom and when, and must not be
+   presented as the original program.
+
+3. Names (section 7(e)). This license grants no right to use the name
+   "Jaco Crafford", the name "VZ-01" or any associated name or logo to
+   identify, endorse or promote a modified version or a work based on this
+   program, except as required to give the attribution in term 1.
+
+4. Network use. AGPL-3.0 section 13 applies: if you run a modified version on
+   a server and let people interact with it over a network (for example,
+   hosting it as a website), you must offer those users the complete
+   corresponding source code of your version under this same license.
+
+
+THIRD-PARTY COMPONENTS
+
+three.js, Copyright (c) 2010-2026 three.js authors, MIT License.
+Geist Mono, Copyright (c) Vercel, SIL Open Font License 1.1 (loaded from
+Google Fonts at runtime, not included in this repository).
+
+
+Modifications
+-------------
+(Anyone distributing a modified version appends notices here.)

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 import type { ColorParamDef } from '../../app/params';
 import type { ParamStore } from '../../app/store';
 import { h, nextId, type Component } from '../dom';

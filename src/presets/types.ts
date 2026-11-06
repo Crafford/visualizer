@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 import type { ParamValues } from '../app/params';
 
 /** Preset schema version. Bump with a migration in presets/store.ts when the shape changes. */

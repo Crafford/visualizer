@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 import type { EffectEntry } from './types';
 import { createInkEffect } from './ink/InkEffect';
 import { INK_PARAMS, INK_SECTIONS } from './ink/params';

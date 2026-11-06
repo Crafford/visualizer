@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 import type { WebGLRenderer } from 'three';
 import type { AudioFrame } from '../audio/types';
 import type { ParamDef, ParamValues, SectionDef } from '../app/params';

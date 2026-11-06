@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 /**
  * The canvas follows the UI brightness (LT / DRK). On a UI mode change, each effect's
  * background colour is mirrored in lightness when it sits on the wrong side of 50%, and its

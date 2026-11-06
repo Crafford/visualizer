@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 /**
  * Panel presentation of params that the schema does not carry: the short uppercase legend
  * printed under a dial or swatch, and the dial cap colour (TE design 84:11263).

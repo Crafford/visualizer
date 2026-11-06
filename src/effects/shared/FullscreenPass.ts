@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 import * as THREE from 'three';
 import { FULLSCREEN_VERT } from './shaders/fullscreen.glsl';
 

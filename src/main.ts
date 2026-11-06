@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 import './ui/tokens.css';
 import { PrefsStore, applyTheme } from './ui/themes';
 import './ui/app.css';
@@ -12,6 +14,12 @@ import { PresetBank } from './presets/store';
 import { h, svg } from './ui/dom';
 import { ICONS } from './ui/icons';
 import { canvasPatch, type UiMode } from './app/canvasMode';
+import { withPngText } from './app/pngMeta';
+
+/*! VZ-01 Visualizer. Copyright (C) 2026 Jaco Crafford. https://github.com/Crafford/visualizer
+ *  Licensed AGPL-3.0-only with additional attribution terms (see NOTICE). */
+console.info('%cVZ-01 Visualizer%c by Jaco Crafford\nhttps://github.com/Crafford/visualizer (AGPL-3.0, see NOTICE)',
+  'font-weight:bold', 'font-weight:normal');
 
 // UI chrome prefs (theme, panel open) first, so the first paint has the right theme.
 const prefs = new PrefsStore();
@@ -59,7 +67,7 @@ const stamp = (d: Date) => {
 
 const screenshot = async () => {
   if (!stage) return;
-  const blob = await stage.screenshot();
+  const blob = await withPngText(await stage.screenshot());
   const a = h('a', { href: URL.createObjectURL(blob), download: `${store.effectId}-${stamp(new Date())}.png` });
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);

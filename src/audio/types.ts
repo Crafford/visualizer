@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 /** Unsmoothed band values: 0..1 after adaptive normalisation, times sensitivity (0..3). */
 export interface BandValues {
   bass: number;

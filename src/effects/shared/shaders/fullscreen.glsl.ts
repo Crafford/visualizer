@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 /** Max sources; the uniform arrays are fixed-size, uAttractorCount picks how many are live. */
 export const MAX_ATTRACTORS = 3;
 

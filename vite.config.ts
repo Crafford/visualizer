@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 import { defineConfig } from 'vite';
 
 // base './' so the build works from any static path (GitHub Pages, S3, a subfolder).

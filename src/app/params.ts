@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 /**
  * Parameter schema. Single source of truth for the panel UI, the store, presets and effects.
  *

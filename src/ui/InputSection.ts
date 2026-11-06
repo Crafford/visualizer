@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 import { AudioEngine, MSG } from '../audio/AudioEngine';
 import type { SourceKind } from '../audio/types';
 import { h, Disposer, type Component } from './dom';

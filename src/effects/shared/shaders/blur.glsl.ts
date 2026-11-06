@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 /**
  * Two-layer separable blur header shared by the trail passes (ink, smoke): uniforms
  * uLine / uWash / uTexel / uSigmaLine / uSigmaWash, MRT outputs outLine / outWash, and

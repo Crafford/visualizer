@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 import { APP_PARAMS, defaultValues, sanitizeValue, type ParamDef, type ParamValues } from '../app/params';
 import { PRESET_SCHEMA, type Preset, type PresetFile, type PresetStorage } from './types';
 

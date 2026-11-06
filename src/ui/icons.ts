@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 /** Inline SVG icons (redrawn from the TE design), currentColor. */
 const svg = (size: number, body: string, extra = '') =>
   `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" aria-hidden="true" ${extra}>${body}</svg>`;

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 /**
  * rAF loop with a fixed-timestep accumulator.
  * step() runs at a fixed rate (deterministic simulation), render() once per display frame.
