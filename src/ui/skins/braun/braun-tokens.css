@@ -4,7 +4,9 @@
  * Braun skin tokens: the Figma "Viz" library's "skin" variable collection (modes light / dark),
  * mapped 1:1 (name "case/deck panel" -> --case-deck-panel), plus its effect styles as box-shadow
  * lists (--fx-style-<name>) and glows as drop-shadow / text-shadow values (--glow-<name>).
- * GENERATED from the file (scratchpad gen_tokens.py, M15); edit in Figma, then regenerate.
+ * GENERATED from the file (scratchpad gen_tokens.py, M15; M18 adds the display window, stroke and
+ * reflection and the case noise colour); edit in Figma, then regenerate. Figma cannot bind a variable
+ * to a NOISE effect yet: fx/case noise mirrors the literal in the case/panel effect style.
  * Selected with <html data-theme="braun-light"> / <html data-theme="braun-dark">.
  */
 :root[data-skin='braun'] {
@@ -52,7 +54,7 @@
   --fx-style-key-power-dome-hover: 0px 1.23px 1.85px 0px #00000080, inset 0px 1.23px 0px 0px #FFFFFF80;
   --fx-style-key-power-dome-pressed: inset 0px 1.23px 2.46px 0px #00000073;
   --fx-style-key-power-collar: 0px 1.23px 0px 0px var(--fx-collar-highlight);
-  --fx-style-vfd-window: 0px 2px 0px 0px var(--fx-window-highlight), inset 0px 1px 0px 0px #FFFFFF0F;
+  --fx-style-vfd-window: 0px 2px 0.5px 0px var(--fx-window-highlight), inset 0px 1px 0px 0px #FFFFFF0F;
   --fx-style-vfd-field: inset 0px 1px 4px 0px #000000B2, 0px 1px 0px 0px #FFFFFF0F;
   --fx-style-vfd-strip: inset 0px 1px 2px 0px #00000099;
   --fx-style-vfd-menu: 0px 12px 24px 0px #0000008C;
@@ -141,6 +143,10 @@
   --fx-plate-pressed-shadow: #00000040;
   --fx-plate-pressed-highlight: #FFFFFF80;
   --vfd-bar-low: #B6EE6E8C;
+  --vfd-display-window: #131212;
+  --vfd-display-stroke: #000000;
+  --vfd-reflection: #FFFFFF1A;
+  --fx-case-noise: #4641410D;
 }
 :root[data-theme='braun-dark'] {
   color-scheme: dark;
@@ -212,4 +218,8 @@
   --fx-plate-pressed-shadow: #0000008C;
   --fx-plate-pressed-highlight: #FFFFFF0D;
   --vfd-bar-low: #B6EE6E8C;
+  --vfd-display-window: #131212;
+  --vfd-display-stroke: #000000;
+  --vfd-reflection: #FFFFFF1A;
+  --fx-case-noise: #4641410D;
 }

@@ -69,7 +69,7 @@ export interface VfdApi extends Component {
 export function createVfd(engine: AudioEngine, listen: ListenController): VfdApi {
   const d = new Disposer();
   const tag = h('span', { class: 'bn-vfd-tag' }, 'ink');
-  const pNum = h('span', { class: 'bn-vfd-dim' }, 'p01');
+  const pNum = h('span', { class: 'bn-vfd-dim bn-vfd-pnum' }, 'p01');
   const pName = h('span', { class: 'bn-vfd-bright' }, 'default');
   const ind = (label: string) => {
     const el = h('span', { class: 'bn-ind' }, h('span', { class: 'bn-ind-led' }), h('span', { class: 'bn-ind-label' }, label));
