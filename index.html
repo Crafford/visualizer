@@ -13,16 +13,24 @@
     <title>Visualizer</title>
     <script>
       // Skin and mode before the first paint (same rule as src/ui/themes.ts loadPrefs): the
-      // mode is always the system colour scheme on load. main.ts re-applies it.
+      // mode is always the system colour scheme on load. main.ts re-applies it. The Braun
+      // skin's fonts start loading here when it is the stored skin (else on first switch).
       (function () {
         var mode = 'light', theme = 'te';
         try { if (matchMedia('(prefers-color-scheme: dark)').matches) mode = 'dark'; } catch (e) {}
         try {
           var p = JSON.parse(localStorage.getItem('visualizer.ui.v2') || '{}');
-          if (p.theme === 'te') theme = p.theme;
+          if (p.theme === 'te' || p.theme === 'braun') theme = p.theme;
         } catch (e) {}
         document.documentElement.dataset.theme = theme + '-' + mode;
         document.documentElement.dataset.skin = theme;
+        if (theme === 'braun') {
+          var l = document.createElement('link');
+          l.rel = 'stylesheet';
+          l.href = 'https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500&family=Share+Tech+Mono&display=swap';
+          l.setAttribute('data-skin-fonts', 'braun');
+          document.head.appendChild(l);
+        }
       })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />

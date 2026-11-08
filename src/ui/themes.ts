@@ -13,6 +13,7 @@ export interface UiTheme { id: string; /** Dropdown text, lower case (skins set 
 /** TE stays the default skin (first). */
 export const THEMES: readonly UiTheme[] = [
   { id: 'te', label: 'teenage eng.' },
+  { id: 'braun', label: 'braun' },
 ];
 
 export interface UiPrefs {

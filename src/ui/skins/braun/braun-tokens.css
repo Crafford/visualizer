@@ -1,0 +1,215 @@
+/* SPDX-License-Identifier: AGPL-3.0-only
+   Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms. */
+/*
+ * Braun skin tokens: the Figma "Viz" library's "skin" variable collection (modes light / dark),
+ * mapped 1:1 (name "case/deck panel" -> --case-deck-panel), plus its effect styles as box-shadow
+ * lists (--fx-style-<name>) and glows as drop-shadow / text-shadow values (--glow-<name>).
+ * GENERATED from the file (scratchpad gen_tokens.py, M15); edit in Figma, then regenerate.
+ * Selected with <html data-theme="braun-light"> / <html data-theme="braun-dark">.
+ */
+:root[data-skin='braun'] {
+  /* Mode-independent variables (space, radius, size, font) */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-10: 10px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --radius-case: 3px;
+  --radius-window: 3px;
+  --radius-capsule: 8px;
+  --radius-cap: 2px;
+  --radius-swatch: 1px;
+  --size-key-round: 24px;
+  --size-key-power: 32px;
+  --size-plate: 48px;
+  --size-capsule-width: 40px;
+  --size-capsule-height: 16px;
+  --size-dropdown-width: 142px;
+  --size-field-height: 30px;
+  --size-panel-width: 340px;
+  --font-ui: 'Host Grotesk';
+  --font-vfd: 'Share Tech Mono';
+
+  /* Effect styles (their colours are the mode variables below) */
+  --fx-style-case-panel: 0px 1px 2px 0px var(--fx-case-shadow-near), 0px 6px 16px 0px var(--fx-case-shadow-far), inset 0px 1px 0px 0px var(--fx-case-highlight);
+  --fx-style-case-plate: 0px 1px 2px 0px var(--fx-plate-shadow-near), 0px 6px 16px 0px var(--fx-plate-shadow-far), inset 0px 1px 0px 0px var(--fx-plate-highlight);
+  --fx-style-case-plate-hover: 0px 1.4px 2.8px 0px var(--fx-plate-shadow-near), 0px 8.4px 22.4px 0px var(--fx-plate-shadow-far), inset 0px 1px 0px 0px var(--fx-plate-highlight);
+  --fx-style-case-plate-pressed: inset 0px 1px 3px 0px var(--fx-plate-pressed-shadow), 0px 1px 0px 0px var(--fx-plate-pressed-highlight);
+  --fx-style-well-inset: inset 0px 1px 1.5px 0px var(--fx-well-shadow), 0px 1px 0px 0px var(--fx-well-highlight);
+  --fx-style-well-info: inset 0px 1px 2px 0px var(--fx-info-well-shadow), 0px 1px 0px 0px var(--fx-well-highlight);
+  --fx-style-well-info-pressed: inset 0px 1.5px 3px 0px var(--fx-info-well-pressed-shadow), 0px 1px 0px 0px var(--fx-well-highlight);
+  --fx-style-key-face: 0px 1px 1.5px 0px var(--fx-key-shadow), inset 0px 1px 0px 0px #FFFFFF0D;
+  --fx-style-key-face-hover: 0px 3px 5px 0px #00000073, 0px 1px 1px 0px #00000080, inset 0px 1px 0px 0px #FFFFFF14;
+  --fx-style-key-face-pressed: inset 0px 2px 3px 0px #000000A6;
+  --fx-style-key-dome: 0px 1px 1.5px 0px #00000080, inset 0px 1px 0px 0px #FFFFFF0D;
+  --fx-style-key-dome-hover: 0px 2px 4px 0px #000000B2, 0px 1px 1px 0px #00000080, inset 0px 1px 0px 0px #FFFFFF14;
+  --fx-style-key-dome-pressed: inset 0px 2px 3px 0px #000000B2;
+  --fx-style-key-power-dome: 0px 1.23px 1.85px 0px #00000080, inset 0px 1.23px 0px 0px #FFFFFF61;
+  --fx-style-key-power-dome-hover: 0px 1.23px 1.85px 0px #00000080, inset 0px 1.23px 0px 0px #FFFFFF80;
+  --fx-style-key-power-dome-pressed: inset 0px 1.23px 2.46px 0px #00000073;
+  --fx-style-key-power-collar: 0px 1.23px 0px 0px var(--fx-collar-highlight);
+  --fx-style-vfd-window: 0px 2px 0px 0px var(--fx-window-highlight), inset 0px 1px 0px 0px #FFFFFF0F;
+  --fx-style-vfd-field: inset 0px 1px 4px 0px #000000B2, 0px 1px 0px 0px #FFFFFF0F;
+  --fx-style-vfd-strip: inset 0px 1px 2px 0px #00000099;
+  --fx-style-vfd-menu: 0px 12px 24px 0px #0000008C;
+  --fx-style-fader-cap: 0px 2px 3px 0px #00000073, inset 0px 1px 0px 0px #FFFFFF1F;
+  --fx-style-fader-slot: 0px 1px 0px 0px #FFFFFF0F;
+  --fx-style-fader-index: 0px 0.5px 0px 0px #FFFFFF99;
+  --fx-style-swatch-face: inset 0px -1px 0px 0px var(--fx-swatch-highlight);
+  --fx-style-dial-body: 0px 2.5px 4.5px 0px var(--fx-dial-shadow), 0px 0.5px 0.5px 0px #0000004D;
+  --fx-style-selector-skirt: 0px 2px 4px 0px var(--fx-skirt-shadow), inset 0px 1px 0px 0px #FFFFFF12;
+  --fx-style-selector-pointer-face: inset 0px 0.6px 0px 0px #FFFFFF1F;
+
+  /* Glows (filter: drop-shadow / text-shadow) */
+  --glow-vfd-glow: 0 0 3px var(--fx-vfd-glow);
+  --glow-vfd-segment-glow: 0 0 4px #B6EE6E8C;
+  --glow-led-glow: 0 0 4px var(--fx-led-glow);
+  --glow-vfd-caret-glow: 0 0 3px #B6EE6E80;
+  --glow-selector-pointer: 1px 2px 3px #00000080;
+}
+:root[data-theme='braun-light'] {
+  color-scheme: light;
+  --case-deck: #D4D8DA;
+  --case-deck-panel: #D4D8DAE5;
+  --case-edge: #B2B7BB;
+  --text-strong: #2A2D30;
+  --text-key: #3B3F43;
+  --text-legend: #565B60;
+  --rule-section: var(--text-legend);
+  --tick-major: #83888C;
+  --tick-minor: #A3A8AC;
+  --well-face: #B4B8BB;
+  --key-face-top: #303234;
+  --key-face-bottom: #1E1F21;
+  --key-edge: #1C1E20;
+  --led-on: #7ADB5A;
+  --led-off: #9AA0A5;
+  --vfd-window: #070908;
+  --vfd-edge: #0A0B0B00;
+  --vfd-bright: #B6EE6E;
+  --vfd-dim: #5F8F48;
+  --vfd-peak: #E2FFB8;
+  --vfd-ghost: #B6EE6E14;
+  --vfd-led-off: #1E2A1B;
+  --vfd-selection: #14200F;
+  --focus-ring: #1D2023;
+  --focus-field: #E8EAEB;
+  --accent-collar-top: #2A2C2F;
+  --accent-collar-bottom: #45484C;
+  --selector-dot: #5C6166;
+  --selector-label: #1D2023;
+  --info-well: #C8CCCF;
+  --info-well-pressed: #C0C4C7;
+  --fader-slot: #0B0C0C;
+  --fader-index: #E8EAEB;
+  --canvas-paper: #F7F7F5;
+  --fx-case-shadow-near: #0000002E;
+  --fx-case-shadow-far: #0000001A;
+  --fx-case-highlight: #FFFFFFE5;
+  --fx-plate-shadow-near: #0000002E;
+  --fx-plate-shadow-far: #0000001A;
+  --fx-plate-highlight: #FFFFFFCC;
+  --fx-well-shadow: #0000004D;
+  --fx-well-highlight: #FFFFFF8C;
+  --fx-key-shadow: #00000059;
+  --fx-window-highlight: #FFFFFFE5;
+  --fx-swatch-highlight: #FFFFFFE5;
+  --fx-dial-shadow: #00000059;
+  --fx-skirt-shadow: #0000004D;
+  --fx-collar-highlight: #FFFFFF99;
+  --fx-info-well-shadow: #00000038;
+  --fx-info-well-pressed-shadow: #00000057;
+  --fx-vfd-glow: #B6EE6E59;
+  --fx-led-glow: #7ADB5ACC;
+  --dial-index: #EFEEE6;
+  --selector-index: #F2F1EA;
+  --dial-rim: #6A6E7259;
+  --fader-fill: #3B3F43;
+  --vfd-window-hover: #121813;
+  --vfd-field-edge: #8A8F93;
+  --vfd-menu-edge: #111213;
+  --vfd-segment-ghost: #B6EE6E12;
+  --tick-dial-major: #2A2D30E5;
+  --tick-dial-minor: #2A2D30A6;
+  --vfd-dim-off: #5F8F48CC;
+  --plate-hover-overlay: #FFFFFF38;
+  --plate-pressed-overlay: #0000000D;
+  --fx-plate-pressed-shadow: #00000040;
+  --fx-plate-pressed-highlight: #FFFFFF80;
+  --vfd-bar-low: #B6EE6E8C;
+}
+:root[data-theme='braun-dark'] {
+  color-scheme: dark;
+  --case-deck: #2B2B2A;
+  --case-deck-panel: #2B2B2AD9;
+  --case-edge: #141414;
+  --text-strong: #E8EAEB;
+  --text-key: #C3C6C8;
+  --text-legend: #A4A8AB;
+  --rule-section: var(--text-legend);
+  --tick-major: #5D5F61;
+  --tick-minor: #46484A;
+  --well-face: #161718;
+  --key-face-top: #303234;
+  --key-face-bottom: #1E1F21;
+  --key-edge: #0B0C0D;
+  --led-on: #7ADB5A;
+  --led-off: #4A4C4E;
+  --vfd-window: #070908;
+  --vfd-edge: #0A0B0B;
+  --vfd-bright: #B6EE6E;
+  --vfd-dim: #5F8F48;
+  --vfd-peak: #E2FFB8;
+  --vfd-ghost: #B6EE6E14;
+  --vfd-led-off: #1E2A1B;
+  --vfd-selection: #14200F;
+  --focus-ring: #F2F3F4;
+  --focus-field: #E8EAEB;
+  --accent-collar-top: #111213;
+  --accent-collar-bottom: #2C2E30;
+  --selector-dot: #9AA0A5;
+  --selector-label: #E8EAEB;
+  --info-well: #222221;
+  --info-well-pressed: #1C1C1B;
+  --fader-slot: #0B0C0C;
+  --fader-index: #E8EAEB;
+  --canvas-paper: #0A0A08;
+  --fx-case-shadow-near: #00000059;
+  --fx-case-shadow-far: #00000038;
+  --fx-case-highlight: #FFFFFF12;
+  --fx-plate-shadow-near: #00000066;
+  --fx-plate-shadow-far: #0000004D;
+  --fx-plate-highlight: #FFFFFF0F;
+  --fx-well-shadow: #00000099;
+  --fx-well-highlight: #FFFFFF0F;
+  --fx-key-shadow: #00000099;
+  --fx-window-highlight: #FFFFFF12;
+  --fx-swatch-highlight: #FFFFFF47;
+  --fx-dial-shadow: #000000A6;
+  --fx-skirt-shadow: #00000099;
+  --fx-collar-highlight: #FFFFFF0F;
+  --fx-info-well-shadow: #00000099;
+  --fx-info-well-pressed-shadow: #000000CC;
+  --fx-vfd-glow: #B6EE6E59;
+  --fx-led-glow: #7ADB5ACC;
+  --dial-index: #EFEEE6;
+  --selector-index: #F2F1EA;
+  --dial-rim: #6A6E7273;
+  --fader-fill: #C3C6C8;
+  --vfd-window-hover: #121813;
+  --vfd-field-edge: #8A8F93;
+  --vfd-menu-edge: #111213;
+  --vfd-segment-ghost: #B6EE6E12;
+  --tick-dial-major: #E8EAEBE5;
+  --tick-dial-minor: #E8EAEBA6;
+  --vfd-dim-off: #5F8F48CC;
+  --plate-hover-overlay: #FFFFFF0D;
+  --plate-pressed-overlay: #0000001F;
+  --fx-plate-pressed-shadow: #0000008C;
+  --fx-plate-pressed-highlight: #FFFFFF0D;
+  --vfd-bar-low: #B6EE6E8C;
+}

@@ -1,0 +1,450 @@
+/* SPDX-License-Identifier: AGPL-3.0-only
+   Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms. */
+/*
+ * Braun skin components (Figma "Viz" / Braun 168:2, library "Braun — Components" 250:2).
+ * Every colour, gradient end and shadow is a token from braun-tokens.css (the Figma variables
+ * and effect styles); geometry is the design's. Unbound design values (knob and key face
+ * gradients) are written here as in the components. All classes are bn-*; the shared shell
+ * (panel card, morph, plates, LIVE strip, tooltip) is restyled below through its tokens.
+ */
+
+/* ---------------------------------------------------------------- shell tokens */
+:root[data-skin='braun'] {
+  --page-bg: var(--canvas-paper);
+  --ink: var(--text-strong);
+  --muted: var(--text-legend);
+  --accent: var(--focus-ring);
+  --key-fg: var(--text-key);
+  --scroll-thumb: color-mix(in srgb, var(--text-legend) 55%, transparent);
+  /* Panel case (Panel 258:2624): deck at 90% / 85%, square 3 px corners, case shadow. The
+     lists match the plate's shape (D, D, inset, inset) so the minimise morph interpolates. */
+  --panel-bg: var(--case-deck-panel);
+  --panel-border: transparent;
+  --panel-shadow: var(--fx-style-case-panel), inset 0 0 0 0 transparent;
+  --card-r: var(--radius-case);
+  /* Floating plates (259:3196): opaque deck, 1 px inside edge, plate shadow. */
+  --float-key: var(--size-plate);
+  --float-key-r: var(--radius-case);
+  --float-key-bg: var(--case-deck);
+  --float-key-border: transparent;
+  --float-key-shadow: var(--fx-style-case-plate), inset 0 0 0 1px var(--case-edge);
+  --key-hover: var(--plate-hover-overlay);
+  --key-press: var(--plate-pressed-overlay);
+  --key-press-shadow: var(--fx-style-case-plate-pressed), inset 0 0 0 1px var(--case-edge), 0 0 0 0 transparent, inset 0 0 0 0 transparent;
+  /* LIVE strip (259:3197) */
+  --plate-bg: var(--case-deck);
+  --plate-border: transparent;
+  --plate-shadow: var(--fx-style-case-plate), inset 0 0 0 1px var(--case-edge);
+  --oled-bg: var(--vfd-window);
+  --strip-frame: var(--fx-style-vfd-strip);
+  --f-ui: var(--font-ui), system-ui, sans-serif;
+  --f-vfd: var(--font-vfd), ui-monospace, monospace;
+  /* Info key and info module motion (200 ms ease-out, Figma note on 256:1309). */
+  --t-model: 200ms;
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) { :root[data-skin='braun'] { --t-model: 0ms; } }
+
+:root[data-skin='braun'] body { font: 400 11px/15px var(--f-ui); color: var(--text-strong); }
+.panel-braun { border-width: 0; font-family: var(--f-ui); }
+:where(.panel-braun) button { font-family: inherit; }
+/* Rings are drawn per control (1 px, focus/ring); the generic outline is off inside the panel. */
+.panel-braun :focus-visible { outline: none; }
+
+/* ---------------------------------------------------------------- shared type */
+.bn-label { display: block; font: 400 9px/12px var(--f-ui); color: var(--text-key); white-space: nowrap; transition: color var(--t-ui) var(--ease-ui), opacity var(--t-ui) var(--ease-ui); }
+.bn-legend { display: block; font: 400 9px/12px var(--f-ui); color: var(--text-legend); white-space: nowrap; }
+.bn-led {
+  display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--led-off);
+  transition: background-color var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui);
+}
+
+/* ---------------------------------------------------------------- header */
+.bn-header { display: flex; flex-direction: column; gap: 16px; padding: 20px; }
+.bn-title-row { display: flex; align-items: center; justify-content: space-between; height: 24px; }
+/* Hide-panel icon key (256:1323): 16 x 24, icon at 70% on hover, ring 20 x 20 r4 on focus. */
+.bn-icon-key {
+  position: relative; display: grid; place-items: center; width: 16px; height: 24px; padding: 0;
+  border: 0; background: none; color: var(--text-strong); cursor: pointer;
+  transition: opacity var(--t-ui) var(--ease-ui);
+}
+.bn-icon-key svg rect, .bn-icon-key svg path { stroke-width: 1.3; }
+@media (hover: hover) { .bn-icon-key:hover { opacity: 0.7; } }
+:root[data-input='keyboard'] .bn-icon-key:focus-visible::after {
+  content: ''; position: absolute; left: -2px; top: 2px; width: 20px; height: 20px;
+  border: 1px solid var(--focus-ring); border-radius: 4px;
+}
+/* VZ1 model name = the info key (256:1309): hover / open / keyboard focus grows a recessed well
+   to the left of the name, slides the name left and fades in the info icon. */
+.bn-model {
+  position: relative; width: 64px; height: 24px; padding: 0; border: 0; background: none; cursor: pointer;
+  color: var(--text-strong);
+}
+.bn-model-well {
+  position: absolute; top: 0; left: 33px; width: 31px; height: 24px; border-radius: 3px; opacity: 0;
+  background: var(--info-well); box-shadow: var(--fx-style-well-info);
+  transition: left var(--t-model) var(--ease-out), width var(--t-model) var(--ease-out), opacity var(--t-model) var(--ease-out),
+    background-color var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui);
+}
+.bn-model-name {
+  position: absolute; top: 2px; left: 33px; font: 500 16px/21px var(--f-ui); white-space: nowrap;
+  transition: left var(--t-model) var(--ease-out);
+}
+.bn-model-icon {
+  position: absolute; top: 6px; left: 46px; width: 12px; height: 12px; display: block; opacity: 0;
+  transition: opacity var(--t-model) var(--ease-out);
+}
+.bn-model-icon svg { display: block; }
+.bn-model.is-open .bn-model-well, :root[data-input='keyboard'] .bn-model:focus-visible .bn-model-well { left: 0; width: 64px; opacity: 1; }
+.bn-model.is-open .bn-model-name, :root[data-input='keyboard'] .bn-model:focus-visible .bn-model-name { left: 8px; }
+.bn-model.is-open .bn-model-icon, :root[data-input='keyboard'] .bn-model:focus-visible .bn-model-icon { opacity: 1; }
+@media (hover: hover) {
+  .bn-model:hover .bn-model-well { left: 0; width: 64px; opacity: 1; }
+  .bn-model:hover .bn-model-name { left: 8px; }
+  .bn-model:hover .bn-model-icon { opacity: 1; }
+}
+.bn-model:active .bn-model-well { left: 0; width: 64px; opacity: 1; background: var(--info-well-pressed); box-shadow: var(--fx-style-well-info-pressed); }
+.bn-model:active .bn-model-name { left: 8px; }
+.bn-model:active .bn-model-icon { opacity: 1; }
+:root[data-input='keyboard'] .bn-model:focus-visible::after {
+  content: ''; position: absolute; inset: -3px; border: 1px solid var(--focus-ring); border-radius: 5px;
+}
+
+/* ---------------------------------------------------------------- VFD (270:5193) */
+.bn-vfd {
+  display: flex; align-items: center; gap: 12px; min-height: 98px; padding: 12px 14px;
+  border-radius: var(--radius-window); background: var(--vfd-window);
+  box-shadow: var(--fx-style-vfd-window), inset 0 0 0 1px var(--vfd-edge);
+  font-family: var(--f-vfd); color: var(--vfd-bright); text-transform: lowercase;
+}
+.bn-inds { flex: none; display: flex; flex-direction: column; gap: 6px; width: 35px; margin-left: 1px; }
+.bn-ind { display: flex; align-items: center; gap: 5px; height: 9px; }
+.bn-ind-led { flex: none; width: 4px; height: 4px; border-radius: 50%; background: var(--vfd-led-off); transition: background-color var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui); }
+.bn-ind-label { font: 400 8px/9px var(--f-vfd); color: var(--vfd-dim-off); transition: color var(--t-ui) var(--ease-ui); }
+.bn-ind.is-selected .bn-ind-label, .bn-ind.is-live .bn-ind-label { color: var(--vfd-bright); text-shadow: var(--glow-vfd-glow); }
+.bn-ind.is-live .bn-ind-led { background: var(--led-on); box-shadow: var(--glow-led-glow); }
+.bn-readout { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.bn-legends { display: flex; align-items: center; gap: 5px; height: 12px; font: 400 9px/10px var(--f-vfd); white-space: nowrap; }
+.bn-vfd-tag {
+  display: inline-flex; align-items: center; height: 12px; padding: 0 3px; border-radius: 1px;
+  box-shadow: inset 0 0 0 1px var(--vfd-bright), var(--glow-vfd-glow); text-shadow: var(--glow-vfd-glow);
+}
+.bn-vfd-dim { color: var(--vfd-dim); }
+.bn-vfd-bright { color: var(--vfd-bright); text-shadow: var(--glow-vfd-glow); overflow: hidden; text-overflow: ellipsis; }
+.bn-main { display: flex; align-items: flex-end; gap: 4px; height: 26px; }
+.bn-digits { display: flex; gap: 2px; }
+.bn-digit { display: block; overflow: visible; }
+.bn-digit path { fill: var(--vfd-segment-ghost); transition: fill var(--t-press) linear; }
+.bn-digit path.on { fill: var(--vfd-bright); filter: drop-shadow(var(--glow-vfd-segment-glow)); }
+.bn-bpm { font: 400 8px/9px var(--f-vfd); }
+.bn-status { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.bn-vfd-status { font: 400 11px/12px var(--f-vfd); color: var(--vfd-bright); text-shadow: var(--glow-vfd-glow); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bn-vfd-sub { font: 400 9px/10px var(--f-vfd); color: var(--vfd-dim); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.bn-clip { flex: none; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 20px; }
+.bn-clip-title { font: 400 6px/7px var(--f-vfd); color: var(--vfd-dim); }
+.bn-clip-meter { display: flex; gap: 3px; height: 64px; }
+.bn-clip-scale { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; width: 7px; font: 400 6px/7px var(--f-vfd); color: var(--vfd-dim); }
+.bn-clip-segs { display: flex; flex-direction: column; gap: 1.45px; width: 10px; }
+.bn-seg { height: 4px; flex: none; border-radius: 0.5px; background: var(--vfd-ghost); }
+.bn-seg.on { background: var(--vfd-bright); box-shadow: var(--glow-vfd-glow); }
+.bn-seg.is-clip.on { background: var(--vfd-peak); }
+
+/* ---------------------------------------------------------------- sections */
+.bn-section { display: flex; flex-direction: column; gap: 16px; padding: 16px 20px; }
+.bn-section-output { padding-bottom: 24px; }
+.bn-head { display: flex; align-items: center; gap: 10px; height: 15px; margin: 0; }
+.bn-head-title { font: 400 11px/15px var(--f-ui); color: var(--text-legend); white-space: nowrap; }
+.bn-head-rule { flex: 1; height: 1px; background: var(--rule-section); }
+.bn-row { display: flex; align-items: flex-start; }
+.bn-cell { flex: none; width: 150px; }
+.bn-ui-row .bn-cell { padding-top: 18px; }
+.bn-preset-row .bn-cell, .preset-actions .bn-cell { padding-top: 12px; }
+
+/* ---------------------------------------------------------------- input */
+.bn-source-row { display: flex; align-items: flex-start; gap: 20px; }
+.bn-switch-wrap { display: flex; flex-direction: column; align-items: center; gap: 21px; }
+/* Slide switch (257:1348): legends, the well slot with a dark glass line, the ridged slider. */
+.bn-switch { display: flex; align-items: center; gap: 8px; height: 16px; }
+.bn-switch .sw-legend { font: 400 9px/12px var(--f-ui); color: var(--text-legend); cursor: pointer; user-select: none; transition: color var(--t-ui) var(--ease-ui), opacity var(--t-ui) var(--ease-ui); }
+.bn-switch[data-pos='system'] .sw-left, .bn-switch[data-pos='mic'] .sw-right { color: var(--text-strong); }
+.bn-switch.is-locked .sw-left { opacity: 0.35; cursor: default; }
+.bn-switch .sw-body { --pos: 0; position: relative; flex: none; width: 40px; height: 16px; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.bn-switch[data-pos='mic'] .sw-body { --pos: 1; }
+.bn-switch .sw-slot { position: absolute; left: 0; top: 4px; width: 40px; height: 8px; border-radius: 1px; background: var(--well-face); box-shadow: var(--fx-style-well-inset); }
+.bn-switch .sw-glass { position: absolute; left: 2px; top: 7px; width: 36px; height: 3px; border-radius: 1px; background: var(--vfd-window); }
+.bn-switch .sw-thumb {
+  position: absolute; left: 0; top: 0; width: 14px; height: 16px; border-radius: var(--radius-cap);
+  display: flex; align-items: center; justify-content: center; gap: 1.5px;
+  background: linear-gradient(180deg, var(--key-face-top), var(--key-face-bottom));
+  box-shadow: inset 0 0 0 1px var(--key-edge), var(--fx-style-key-face);
+  transform: translateX(calc(var(--drag, var(--pos)) * 26px));
+  transition: transform var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui);
+}
+.bn-switch .sw-ridge { width: 1px; height: 8px; background: #FFFFFF38; }
+@media (hover: hover) { .bn-switch .sw-body:hover .sw-thumb { box-shadow: inset 0 0 0 1px var(--key-edge), var(--fx-style-key-face-hover); } }
+.bn-switch.is-dragging .sw-thumb { transition: none; box-shadow: inset 0 0 0 1px var(--key-edge), var(--fx-style-key-face-pressed); }
+:root[data-input='keyboard'] .bn-switch .sw-body:focus-visible::after {
+  content: ''; position: absolute; inset: -2.75px; border: 1px solid var(--focus-ring); border-radius: 4px;
+}
+/* Listen key (254:1269): label, LED, the green power key in its collar; the panel's main key. */
+.bn-listen {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; width: 32px; padding: 0;
+  border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.bn-listen[aria-pressed='true'] .bn-led { background: var(--led-on); box-shadow: var(--glow-led-glow); }
+.bn-power {
+  position: relative; display: block; width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(180deg, var(--accent-collar-top), var(--accent-collar-bottom)); box-shadow: var(--fx-style-key-power-collar);
+}
+.bn-power-dome {
+  position: absolute; left: 5px; top: 5px; width: 22.15px; height: 22.15px; border-radius: 50%;
+  background: linear-gradient(180deg, #6DBA5C, #2F6B2A); box-shadow: var(--fx-style-key-power-dome);
+  transition: box-shadow var(--t-ui) var(--ease-ui);
+}
+@media (hover: hover) { .bn-listen:hover .bn-power-dome { background: linear-gradient(180deg, #86D06F, #2F6B2A); box-shadow: var(--fx-style-key-power-dome-hover); } }
+.bn-listen:active .bn-power-dome { background: linear-gradient(180deg, #2F6B2A, #4F9A45); box-shadow: var(--fx-style-key-power-dome-pressed); transition-duration: var(--t-press); }
+:root[data-input='keyboard'] .bn-listen:focus-visible .bn-power::after {
+  content: ''; position: absolute; inset: -3px; border: 1px solid var(--focus-ring); border-radius: 50%;
+}
+
+/* ---------------------------------------------------------------- selector keys (256:1248) */
+.bn-selectors { display: flex; }
+.bn-selector {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; width: 75px; padding: 0;
+  border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.bn-selector[aria-checked='true'] .bn-label { color: var(--text-strong); }
+.bn-selector[aria-checked='true'] .bn-led { background: var(--led-on); box-shadow: var(--glow-led-glow); }
+.bn-capsule {
+  position: relative; display: block; width: 40px; height: 16px; border-radius: var(--radius-capsule);
+  background: linear-gradient(180deg, var(--key-face-top), var(--key-face-bottom));
+  box-shadow: 0 0 0 1px var(--key-edge), var(--fx-style-key-face);
+  transition: box-shadow var(--t-ui) var(--ease-ui);
+}
+@media (hover: hover) { .bn-selector:hover .bn-capsule { background: linear-gradient(180deg, #38393C, #232426); box-shadow: 0 0 0 1px var(--key-edge), var(--fx-style-key-face-hover); } }
+.bn-selector:active .bn-capsule { background: linear-gradient(180deg, #202123, #252628); box-shadow: 0 0 0 1px var(--key-edge), var(--fx-style-key-face-pressed); transition-duration: var(--t-press); }
+.bn-selector[aria-disabled='true'] .bn-capsule { opacity: 0.4; }
+.bn-selector[aria-disabled='true'] .bn-label { opacity: 0.45; }
+:root[data-input='keyboard'] .bn-selector:focus-visible .bn-capsule::after {
+  content: ''; position: absolute; inset: -3.5px; border: 1px solid var(--focus-ring); border-radius: 11.5px;
+}
+.bn-toggle-row { display: grid; grid-template-columns: 150px 150px; align-items: start; }
+.bn-toggle-legend { padding-top: 26px; }
+
+/* ---------------------------------------------------------------- action keys (254:1237) */
+.bn-action {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; flex: none; width: 75px; padding: 0;
+  border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.bn-round { position: relative; display: block; width: 24px; height: 24px; border-radius: 50%; background: var(--well-face); box-shadow: var(--fx-style-well-inset); }
+.bn-dome {
+  position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 35%, #2E3033 0%, #151617 72%); box-shadow: var(--fx-style-key-dome);
+  transition: box-shadow var(--t-ui) var(--ease-ui);
+}
+@media (hover: hover) { .bn-action:hover:not([aria-disabled='true']) .bn-dome { background: radial-gradient(circle at 38% 35%, #383B3E 0%, #151617 72%); box-shadow: var(--fx-style-key-dome-hover); } }
+.bn-action:active:not([aria-disabled='true']) .bn-dome { background: radial-gradient(circle at 38% 35%, #1C1D1F 0%, #141516 72%); box-shadow: var(--fx-style-key-dome-pressed); transition-duration: var(--t-press); }
+.bn-action[aria-disabled='true'] { cursor: default; }
+.bn-action[aria-disabled='true'] .bn-round { opacity: 0.4; }
+.bn-action[aria-disabled='true'] .bn-label { opacity: 0.45; }
+:root[data-input='keyboard'] .bn-action:focus-visible .bn-round::after {
+  content: ''; position: absolute; inset: -3.5px; border: 1px solid var(--focus-ring); border-radius: 50%;
+}
+
+/* ---------------------------------------------------------------- dropdowns (257:1369) */
+.bn-dropdown { position: relative; width: 142px; }
+.bn-dd {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 142px; height: 30px; padding: 0 12px 0 14px; border: 0; border-radius: var(--radius-window);
+  background: var(--vfd-window); box-shadow: var(--fx-style-vfd-field);
+  color: var(--vfd-bright); font: 400 12px/14px var(--f-vfd); text-transform: lowercase; text-align: left;
+  cursor: pointer; transition: background-color var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui);
+}
+.bn-dd.bn-dd-start { justify-content: flex-start; }
+.bn-dd .dd-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: var(--glow-vfd-glow); }
+.bn-dd .dd-chevron { display: flex; flex: none; filter: drop-shadow(var(--glow-vfd-glow)); }
+@media (hover: hover) { .bn-dd:hover { background: var(--vfd-window-hover); } }
+.bn-dd:active, .bn-dropdown.is-open .bn-dd { box-shadow: inset 0 0 0 1px var(--vfd-field-edge), var(--fx-style-vfd-field); background: var(--vfd-window); }
+:root[data-input='keyboard'] .bn-dd:focus-visible { box-shadow: inset 0 0 0 1.5px var(--focus-field), var(--fx-style-vfd-field); }
+.bn-dd-list {
+  position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; width: 144px; max-height: 240px; overflow-y: auto;
+  margin: 0; padding: 4px; list-style: none; display: flex; flex-direction: column; gap: 2px;
+  border-radius: var(--radius-window); background: var(--vfd-window);
+  box-shadow: inset 0 0 0 1px var(--vfd-menu-edge), var(--fx-style-vfd-menu);
+  scrollbar-width: thin; scrollbar-color: var(--vfd-dim) transparent;
+}
+.bn-dd-list:focus { outline: none; }
+.bn-dd-item {
+  display: flex; align-items: center; gap: 10px; flex: none; height: 30px; padding: 0 10px; border-radius: 6px;
+  font: 400 12px/14px var(--f-vfd); color: var(--vfd-dim); text-transform: lowercase; cursor: pointer;
+  transition: background-color var(--t-ui) var(--ease-ui), color var(--t-ui) var(--ease-ui);
+}
+.bn-dd-led { flex: none; width: 4px; height: 4px; border-radius: 50%; background: var(--vfd-led-off); }
+.bn-dd-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bn-dd-item.is-active { background: var(--vfd-window-hover); color: var(--vfd-bright); text-shadow: var(--glow-vfd-glow); }
+.bn-dd-item.is-selected { background: var(--vfd-selection); color: var(--vfd-bright); text-shadow: var(--glow-vfd-glow); }
+.bn-dd-item.is-selected .bn-dd-led { background: var(--led-on); box-shadow: var(--glow-led-glow); }
+
+/* ---------------------------------------------------------------- presets */
+.panel-braun .preset-actions { display: flex; align-items: flex-start; }
+/* Naming input (270:5341): VFD field, edge, number + name, green bar caret. */
+.bn-name {
+  display: flex; align-items: center; gap: 3px; width: 142px; height: 30px; padding: 0 12px 0 14px;
+  border-radius: var(--radius-window); background: var(--vfd-window);
+  box-shadow: inset 0 0 0 1px var(--vfd-field-edge), var(--fx-style-vfd-field);
+  font: 400 12px/14px var(--f-vfd); color: var(--vfd-bright); cursor: text;
+}
+.bn-name-num { flex: none; text-shadow: var(--glow-vfd-glow); margin-right: 4px; }
+.bn-name .name-input {
+  flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; outline: none;
+  font: inherit; color: var(--vfd-bright); caret-color: var(--vfd-bright); text-transform: lowercase; text-shadow: var(--glow-vfd-glow);
+}
+.bn-name .name-input::placeholder { color: var(--vfd-dim); }
+.bn-name .name-cursor { display: none; }
+@supports (field-sizing: content) {
+  .bn-name .name-input { flex: 0 1 auto; field-sizing: content; min-width: 1ch; caret-color: transparent; }
+  .bn-name:focus-within .name-cursor {
+    display: block; flex: none; width: 2px; height: 14px; background: var(--vfd-bright);
+    filter: drop-shadow(var(--glow-vfd-caret-glow)); animation: blink 1s steps(1) infinite;
+  }
+}
+@media (prefers-reduced-motion: reduce) { .bn-name .name-cursor { animation: none; } }
+.bn-confirm { font: 400 11px/15px var(--f-ui); color: var(--text-strong); padding-top: 20px !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Saved confirmation (VFD / hint 251:298). */
+.bn-hint {
+  align-self: flex-start; margin: 0; padding: 6px 10px; border-radius: var(--radius-window);
+  background: var(--vfd-window); box-shadow: var(--fx-style-vfd-field);
+  font: 400 11px/12px var(--f-vfd); color: var(--vfd-bright); text-shadow: var(--glow-vfd-glow);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- A1 rotary selector (253:1337) */
+.bn-rotary-row { display: flex; justify-content: flex-end; padding: 0 31px 0 24px; }
+.bn-rotary { display: flex; gap: 16px; padding: 7px 0; }
+.bn-rotary-title { color: var(--text-key); }
+.bn-knob { position: relative; display: block; width: 60.44px; height: 53.35px; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.bn-pos { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: var(--selector-dot); }
+.bn-pos-label { position: absolute; width: 6px; font: 400 9px/12px var(--f-ui); color: var(--selector-label); text-align: center; }
+.bn-skirt {
+  position: absolute; left: 22.44px; top: 13.35px; width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(180deg, #2A2C2E, #0C0D0E); box-shadow: var(--fx-style-selector-skirt);
+}
+.bn-sheen {
+  position: absolute; left: 22.44px; top: 13.35px; width: 38px; height: 38px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, #FFFFFF1A 0%, #FFFFFF00 70%); opacity: 0; transition: opacity var(--t-ui) var(--ease-ui);
+}
+@media (hover: hover) { .bn-knob:hover .bn-sheen { opacity: 1; } }
+.bn-pointer {
+  position: absolute; left: 17.44px; top: 8.35px; width: 48px; height: 48px; pointer-events: none;
+  transform-origin: 24px 24px; transition: transform var(--t-ui) var(--ease-ui);
+}
+.bn-grip { display: block; overflow: visible; }
+.bn-grip-sides { filter: drop-shadow(var(--glow-selector-pointer)); }
+.bn-grip-index { fill: var(--selector-index); }
+:root[data-input='keyboard'] .bn-knob:focus-visible .bn-skirt::after {
+  content: ''; position: absolute; inset: -3px; border: 1px solid var(--focus-ring); border-radius: 50%;
+}
+
+/* ---------------------------------------------------------------- banks: faders and dials */
+.bn-bank { display: grid; grid-template-columns: repeat(var(--cols, 4), 1fr); row-gap: 16px; }
+.bn-value { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.bn-value-fader { gap: 8px; }
+.bn-value-dial { gap: 6px; }
+.bn-value-text { font: 400 11px/15px var(--f-ui); color: var(--text-strong); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Fader (269:3623): tall 30 x 96, short 30 x 84. */
+.bn-fader { --h: 96px; position: relative; display: block; width: 30px; height: var(--h); cursor: ns-resize; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.bn-fader.is-short { --h: 84px; }
+.bn-tick { position: absolute; width: 4px; height: 1px; background: var(--tick-minor); }
+.bn-tick.is-major { width: 6px; background: var(--tick-major); }
+.bn-slot { position: absolute; left: 13px; top: 4px; width: 4px; height: calc(var(--h) - 8px); border-radius: 2px; background: var(--fader-slot); box-shadow: var(--fx-style-fader-slot); }
+.bn-cap {
+  position: absolute; left: 4px; top: 0; width: 22px; height: 14px; border-radius: var(--radius-cap);
+  background: linear-gradient(180deg, #3A3C3F, #121314); box-shadow: inset 0 0 0 1px #050506, var(--fx-style-fader-cap);
+}
+@media (hover: hover) { .bn-fader:hover .bn-cap { background: linear-gradient(180deg, #46494C, #121314); } }
+.bn-fader.is-dragging .bn-cap { background: linear-gradient(180deg, #46494C, #121314); }
+.bn-index { position: absolute; left: 4px; top: 6px; width: 14px; height: 2px; background: var(--fader-index); box-shadow: var(--fx-style-fader-index); }
+/* Slot fill under the cap while dragging (269:3457). */
+.bn-fill { position: absolute; left: 10.5px; top: 14px; width: 1px; height: calc(var(--h) - 18px - var(--y, 0px)); background: var(--fader-fill); opacity: 0; transition: opacity var(--t-ui) var(--ease-ui); }
+.bn-fader.is-dragging .bn-fill { opacity: 1; }
+:root[data-input='keyboard'] .bn-fader:focus-visible .bn-cap::after {
+  content: ''; position: absolute; inset: -2px; border: 1px solid var(--focus-ring); border-radius: 4px;
+}
+/* Atelier C2 dial (269:3402). */
+.bn-dial { position: relative; display: block; width: 56px; height: 56px; cursor: ns-resize; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.bn-dial-ticks { position: absolute; inset: 0; }
+.bn-dial-ticks circle { fill: var(--tick-dial-minor); }
+.bn-dial-ticks circle.is-major { fill: var(--tick-dial-major); }
+.bn-dial-side {
+  position: absolute; left: 9px; top: 9px; width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(90deg, #070708 0%, #26282A 28%, #101112 60%, #040405 100%); box-shadow: var(--fx-style-dial-body);
+  transition: top var(--t-ui) var(--ease-ui);
+}
+.bn-dial-top {
+  position: absolute; left: 9px; top: 8px; width: 38px; height: 38px; border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #46494C 0%, #26282A 45%, #0F1011 100%); box-shadow: inset 0 0 0 0.6px var(--dial-rim);
+}
+.bn-dial-spec {
+  position: absolute; left: 15px; top: 13px; width: 13px; height: 8px; border-radius: 50%;
+  background: #FFFFFF17; transform: rotate(20deg); filter: blur(1.75px);
+}
+.bn-dial-index { position: absolute; inset: 0; transition: transform var(--t-press) linear; }
+.bn-dial-index > span { position: absolute; left: 27px; top: 11px; width: 2px; height: 7px; border-radius: 1px; background: var(--dial-index); }
+@media (hover: hover) {
+  .bn-dial:hover .bn-dial-side { top: 11px; background: linear-gradient(90deg, #070708 0%, #303336 28%, #101112 60%, #040405 100%); }
+  .bn-dial:hover .bn-dial-top { background: radial-gradient(circle at 34% 30%, #55595D 0%, #2C2E31 45%, #0F1011 100%); }
+  .bn-dial:hover .bn-dial-spec { background: #FFFFFF24; }
+}
+.bn-dial.is-dragging .bn-dial-side { top: 11px; }
+:root[data-input='keyboard'] .bn-dial:focus-visible::after {
+  content: ''; position: absolute; left: 6px; top: 6px; width: 44px; height: 44px; box-sizing: border-box;
+  border: 1px solid var(--focus-ring); border-radius: 50%;
+}
+
+/* ---------------------------------------------------------------- swatches (253:1349) */
+.bn-swatches { display: grid; grid-template-columns: repeat(4, 1fr); }
+.bn-swatch { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bn-swatch-well {
+  position: relative; display: block; width: 40px; height: 22px; border-radius: 11px;
+  background: var(--key-face-bottom); box-shadow: var(--fx-style-well-inset);
+}
+.bn-swatch-face {
+  position: absolute; left: 3px; top: 3px; width: 34px; height: 16px; border-radius: 8px;
+  box-shadow: var(--fx-style-swatch-face), inset 0 0 0 1px var(--key-edge);
+  transition: background-color var(--t-ui) var(--ease-ui), filter var(--t-ui) var(--ease-ui);
+}
+@media (hover: hover) { .bn-swatch-well:hover .bn-swatch-face { filter: brightness(1.06); } }
+.bn-swatch-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; padding: 0; border: 0; cursor: pointer; }
+:root[data-input='keyboard'] .bn-swatch-well:has(input:focus-visible)::after {
+  content: ''; position: absolute; inset: -3px; border: 1px solid var(--focus-ring); border-radius: 14px;
+}
+
+/* ---------------------------------------------------------------- output */
+.bn-output-row { display: flex; }
+
+/* ---------------------------------------------------------------- shell restyle: plates, show key, LIVE strip, tooltip */
+:root[data-skin='braun'] .float-key { border: 0; border-radius: var(--radius-case); color: var(--text-key); }
+:root[data-skin='braun'] .float-key svg path { stroke-width: 1.6; }
+@media (hover: hover) { :root[data-skin='braun'] .float-key:hover { box-shadow: var(--fx-style-case-plate-hover), inset 0 0 0 1px var(--case-edge); } }
+:root[data-skin='braun'] .float-key:active { transform: none; }
+:root[data-skin='braun'] .float-key:active svg { transform: translateY(1px); }
+:root[data-skin='braun'] .float-key:focus-visible { outline: 1.5px solid var(--focus-ring); outline-offset: 1.5px; }
+:root[data-skin='braun'] .panel-key { color: var(--text-key); }
+:root[data-skin='braun'] .panel.is-min:has(.panel-key:active) { transform: none; }
+:root[data-skin='braun'] .panel.is-min:has(.panel-key:active) .panel-key-icon { margin-top: 1px; }
+:root[data-skin='braun'][data-input='keyboard'] .panel.is-min:has(.panel-key:focus-visible) { outline: 1.5px solid var(--focus-ring); outline-offset: 1.5px; }
+/* LIVE strip (259:3197): plate, smoked VFD window, "live" and VFD spectrum bars. */
+:root[data-skin='braun'] .transport.plate { border: 0; border-radius: var(--radius-case); padding: 7px; }
+:root[data-skin='braun'] .t-strip { width: 282.5px; height: 34px; gap: 8px; padding: 7px 10px; align-items: flex-end; border-radius: 2px; }
+:root[data-skin='braun'] .t-live { font: 400 10px/11px var(--f-vfd); letter-spacing: 0; color: var(--vfd-bright); text-transform: lowercase; text-shadow: var(--glow-vfd-glow); }
+:root[data-skin='braun'] .t-spectrum { height: 20px; gap: 1.5px; overflow: hidden; filter: drop-shadow(var(--glow-vfd-glow)); }
+:root[data-skin='braun'] .oled-spectrum .bar, :root[data-skin='braun'] .oled-spectrum .bar.is-mark { background: var(--vfd-bright); border-radius: 0; }
+:root[data-skin='braun'] .oled-spectrum .bar.is-hot { background: var(--vfd-peak); }
+:root[data-skin='braun'] .oled-spectrum .bar.is-idle, :root[data-skin='braun'] .oled-spectrum .bar.is-idle.is-mark { background: var(--vfd-ghost); }
+/* Tooltip as a small VFD window. */
+:root[data-skin='braun'] .tooltip {
+  padding: 5px 8px; border-radius: var(--radius-window); background: var(--vfd-window); color: var(--vfd-bright);
+  box-shadow: var(--fx-style-vfd-menu); font: 400 11px/12px var(--f-vfd); letter-spacing: 0; text-transform: lowercase; text-shadow: var(--glow-vfd-glow);
+}
+/* The minimised panel is the show-panel plate: keep its 1 px inside edge visible over the face. */
+:root[data-skin='braun'] .panel-face { inset: 1px; border-radius: 2px; }
