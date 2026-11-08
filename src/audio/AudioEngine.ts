@@ -3,50 +3,30 @@
 import { FeatureExtractor } from './analysis';
 import {
   AudioSourceError, silentFrame,
-  type AudioEvents, type AudioFrame, type AudioResponse,
-  type SourceKind, type SourcePayloads, type TransportState,
+  type AudioEvents, type AudioFrame, type AudioResponse, type ListenState, type SourceKind,
 } from './types';
 
 const DEFAULT_RESPONSE: AudioResponse = {
   bassSens: 1, midSens: 1, highSens: 1, smoothRise: 0.02, smoothFall: 0.25, beatThreshold: 0,
 };
 
-/** How long a link must play in pure digital silence before we call it a CORS block. */
-const CORS_SILENCE_S = 2;
-
-const STREAMING_HOSTS = /(^|\.)(spotify\.com|youtube\.com|youtu\.be|soundcloud\.com|music\.apple\.com|deezer\.com|tidal\.com|bandcamp\.com|mixcloud\.com)$/i;
-
-export const MSG = {
-  corsSilence: 'This host blocks cross-origin audio. Try the Capture tab.',
-  linkFailed: 'Could not load this link. It must be a direct .mp3/.m4a file on a host that allows cross-origin requests. Try the Capture tab.',
-  streaming: 'Streaming links (Spotify, YouTube and similar) need the Capture tab.',
-  badUrl: 'Enter a full http(s) link to an audio file.',
-  noCaptureAudio: "No audio captured. Pick a tab and tick 'Share tab audio' in the Chrome dialog.",
-  captureUnsupported: 'Tab capture needs Chrome or Edge on desktop',
-  captureCancelled: 'Capture cancelled.',
-  micDenied: 'Microphone access was blocked. Allow it in the address bar and try again.',
-  micMissing: 'No microphone found.',
-  micUnsupported: 'This browser cannot access the microphone here (it needs https).',
-  decode: 'Could not decode this file',
-} as const;
-
 type Teardown = () => void;
 
 /**
- * Owns the AudioContext, the active source and analysis.
- * Graph: media source -> analyser and media source -> destination (file/url, audible);
- *        stream source -> analyser only (mic/capture, never audible: avoids feedback and double audio).
- * The AudioContext is created lazily on the first setSource() call, which must come from a user gesture,
- * and resumed on every play/start.
+ * Owns the AudioContext, the listening source and analysis. Two sources (M15):
+ * - system: getDisplayMedia with audio (Chrome / Edge on a computer). The video track only
+ *   names what is shared and is stopped at once; the audio is analysed, never played.
+ * - mic: getUserMedia with AEC / NS / AGC off.
+ * Graph: stream source -> analyser only (never audible: no feedback, no double audio).
+ * The AudioContext is created lazily on the first listen() (a user gesture) and resumed on every start.
  */
 export class AudioEngine {
   private ctx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private extractor: FeatureExtractor | null = null;
-  private media: HTMLMediaElement | null = null;
   private liveStart = 0;
   private teardown: Teardown[] = [];
-  /** Bumped on every source change; async work from an older source checks it and bails. */
+  /** Bumped on every source change; async work from an older request checks it and bails. */
   private generation = 0;
 
   private response: AudioResponse = { ...DEFAULT_RESPONSE };
@@ -57,24 +37,29 @@ export class AudioEngine {
     level: new Set(), beat: new Set(), state: new Set(), error: new Set(),
   };
 
-  private _state: TransportState = {
-    source: null, label: '', playing: false, live: false, seekable: false, currentTime: 0, duration: NaN,
-  };
+  private _state: ListenState = { source: null, label: '', playing: false };
 
-  get state(): Readonly<TransportState> {
-    if (this.media) this._state.currentTime = this.media.currentTime;
-    return this._state;
-  }
+  get state(): Readonly<ListenState> { return this._state; }
 
   /** Rolling tempo estimate from detected beats, 0 when unknown. */
   get bpm(): number { return this.extractor?.bpm ?? 0; }
 
-  /** Tab capture needs getDisplayMedia with audio, which only Chromium desktop provides. */
-  static get captureSupported(): boolean {
-    const md = typeof navigator !== 'undefined' ? navigator.mediaDevices : undefined;
+  /**
+   * System audio needs getDisplayMedia with audio, which only Chromium on a computer gives.
+   * Safari and Firefox share no system audio; phones and tablets have no getDisplayMedia audio.
+   */
+  static get systemSupported(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    const md = navigator.mediaDevices;
     if (!md || typeof md.getDisplayMedia !== 'function') return false;
-    if (!('userAgentData' in navigator)) return false; // Chromium only
-    return !matchMedia('(pointer: coarse)').matches;
+    const ua = navigator.userAgent;
+    if (/firefox|fxios/i.test(ua)) return false;
+    if (/safari/i.test(ua) && !/chrome|chromium|crios|edg|android/i.test(ua)) return false;
+    try {
+      // Touch-only devices (no fine pointer anywhere).
+      if (matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches) return false;
+    } catch { /* no matchMedia: assume a computer */ }
+    return true;
   }
 
   on<K extends keyof AudioEvents>(type: K, fn: AudioEvents[K]): () => void {
@@ -86,14 +71,16 @@ export class AudioEngine {
     Object.assign(this.response, patch);
   }
 
-  async setSource<K extends SourceKind>(kind: K, payload: SourcePayloads[K]): Promise<void> {
+  /**
+   * Start listening to `kind`, replacing the current source (handover). Resolves when live;
+   * rejects with an AudioSourceError (code + message) when it could not start, after
+   * returning to idle. A newer listen() or stop() while a prompt is open wins: the older
+   * request resolves without effect.
+   */
+  async listen(kind: SourceKind): Promise<void> {
     try {
-      switch (kind) {
-        case 'file': return await this.setFile(payload as File);
-        case 'mic': return await this.setMic(payload as SourcePayloads['mic']);
-        case 'url': return await this.setUrl(payload as string);
-        case 'capture': return await this.setCapture();
-      }
+      if (kind === 'system') await this.startSystem();
+      else await this.startMic();
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
       this.fire('error', e);
@@ -101,41 +88,9 @@ export class AudioEngine {
     }
   }
 
-  /** Stop and release the current source; back to idle. */
+  /** Stop and release the current source; back to idle. Also cancels a pending listen(). */
   stop(): void {
     this.teardownSource();
-  }
-
-  /** Play file/link sources. No-op for live sources or when nothing is loaded. */
-  async play(): Promise<void> {
-    const el = this.media;
-    if (!el) return;
-    try {
-      await this.ctx?.resume();
-      await el.play();
-    } catch (err) {
-      // Autoplay refusal or a source switch mid-play (AbortError): not worth an error message.
-      // Load failures (NotSupportedError) are reported by the element's 'error' event with a better message.
-      if (err instanceof DOMException && ['AbortError', 'NotAllowedError', 'NotSupportedError'].includes(err.name)) return;
-      throw err;
-    }
-  }
-
-  pause(): void {
-    this.media?.pause();
-  }
-
-  async toggle(): Promise<void> {
-    if (!this.media) return;
-    if (this._state.playing) this.pause();
-    else await this.play();
-  }
-
-  seek(seconds: number): void {
-    if (!this.media || !this._state.seekable || !Number.isFinite(seconds)) return;
-    const d = this.media.duration;
-    this.media.currentTime = Math.max(0, Number.isFinite(d) ? Math.min(d, seconds) : seconds);
-    this.updateState({ currentTime: this.media.currentTime });
   }
 
   /** Call once per animation frame. Returns a reused object; copy if you need to keep it. */
@@ -147,22 +102,13 @@ export class AudioEngine {
     const f = this.frame;
     const playing = this._state.playing;
     f.playing = playing;
-    if (this.media) {
-      f.time = this.media.currentTime;
-      f.duration = Number.isFinite(this.media.duration) ? this.media.duration : 0;
-    } else {
-      f.time = this._state.live && this.ctx ? this.ctx.currentTime - this.liveStart : 0;
-      f.duration = 0;
-    }
+    f.time = playing && this.ctx ? this.ctx.currentTime - this.liveStart : 0;
     if (!this.extractor) return f;
     this.extractor.extract(dt, this.response, playing, f);
     this.fire('level', f.level, f.peak);
     if (f.beat) this.fire('beat', f.beatStrength, this.bpm);
     return f;
   }
-
-  /** Seconds: media time, or seconds since a live source started (as of the last getFrame()). */
-  get frameTime(): number { return this.frame.time; }
 
   /** Analyser bin count (fftSize / 2), 0 before the first source. */
   get spectrumSize(): number { return this.analyser?.frequencyBinCount ?? 0; }
@@ -188,99 +134,64 @@ export class AudioEngine {
 
   // ---------------------------------------------------------------- sources
 
-  private async setFile(file: File): Promise<void> {
-    const ctx = this.ensureContext();
-    this.teardownSource();
-    // A <video> element decodes both audio and video containers; for MP4 video we only use its audio track.
-    const el = document.createElement(file.type.startsWith('video/') ? 'video' : 'audio');
-    el.preload = 'auto';
-    const url = URL.createObjectURL(file);
-    this.teardown.push(() => URL.revokeObjectURL(url));
-    el.src = url;
-    this.attachMedia(el, ctx, () => MSG.decode);
-    this.updateState({
-      source: 'file', label: file.name, playing: false, live: false, seekable: true, currentTime: 0, duration: NaN,
-    });
-    await ctx.resume();
-  }
-
-  private async setUrl(raw: string): Promise<void> {
-    let url: URL;
-    try { url = new URL(raw.trim(), location.href); } catch { throw new AudioSourceError(MSG.badUrl); }
-    if (!/^https?:$/.test(url.protocol) || !raw.trim()) throw new AudioSourceError(MSG.badUrl);
-    if (STREAMING_HOSTS.test(url.hostname)) throw new AudioSourceError(MSG.streaming);
-
-    const ctx = this.ensureContext();
-    this.teardownSource();
-    const el = document.createElement('audio');
-    el.crossOrigin = 'anonymous';
-    el.preload = 'auto';
-    el.src = url.href;
-    this.attachMedia(el, ctx, () => MSG.linkFailed);
-    this.watchCorsSilence(el);
-    // Host and file name ("cdn.example.com/track.mp3"); the OLED truncates with an ellipsis.
-    let file = '';
-    try { file = decodeURIComponent(url.pathname.split('/').pop() || ''); } catch { file = url.pathname.split('/').pop() || ''; }
-    const name = file ? `${url.hostname}/${file}` : url.hostname;
-    this.updateState({
-      source: 'url', label: name, playing: false, live: false, seekable: true, currentTime: 0, duration: NaN,
-    });
-    await ctx.resume();
-  }
-
-  private async setMic(opts: SourcePayloads['mic']): Promise<void> {
+  private async startMic(): Promise<void> {
     const md = navigator.mediaDevices;
-    if (!md?.getUserMedia) throw new AudioSourceError(MSG.micUnsupported);
+    if (!md?.getUserMedia) throw new AudioSourceError('micUnsupported');
     const ctx = this.ensureContext();
     this.teardownSource();
     const gen = this.generation;
     let stream: MediaStream;
     try {
       stream = await md.getUserMedia({
-        audio: {
-          echoCancellation: false, noiseSuppression: false, autoGainControl: false,
-          ...(opts?.deviceId ? { deviceId: { exact: opts.deviceId } } : {}),
-        },
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
       });
     } catch (err) {
+      if (gen !== this.generation) return;
       const name = err instanceof DOMException ? err.name : '';
-      if (name === 'NotAllowedError' || name === 'SecurityError') throw new AudioSourceError(MSG.micDenied);
-      if (name === 'NotFoundError' || name === 'OverconstrainedError') throw new AudioSourceError(MSG.micMissing);
+      if (name === 'NotAllowedError' || name === 'SecurityError') throw new AudioSourceError('micDenied');
+      if (name === 'NotFoundError' || name === 'OverconstrainedError') throw new AudioSourceError('micMissing');
       throw err;
     }
     if (gen !== this.generation) { stopStream(stream); return; } // superseded while the prompt was open
     const track = stream.getAudioTracks()[0];
-    this.attachStream(stream, ctx, 'mic', track?.label || 'Default microphone');
+    this.attachStream(stream, ctx, 'mic', track?.label || 'default microphone');
     await ctx.resume();
   }
 
-  private async setCapture(): Promise<void> {
-    if (!AudioEngine.captureSupported) throw new AudioSourceError(MSG.captureUnsupported);
+  private async startSystem(): Promise<void> {
+    if (!AudioEngine.systemSupported) throw new AudioSourceError('systemUnsupported');
     const ctx = this.ensureContext();
     this.teardownSource();
     const gen = this.generation;
     let stream: MediaStream;
     try {
-      // Chrome only gives audio when video is requested too. The extra keys are Chrome hints.
+      // Chrome only shares audio when video is requested too: ask for the smallest video.
+      // displaySurface 'monitor' pre-selects the Entire Screen pane, where "Share system
+      // audio" lives; the other keys are Chrome hints (ignored elsewhere).
       stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true, audio: true, selfBrowserSurface: 'exclude', systemAudio: 'include',
+        video: { displaySurface: 'monitor', width: 160, height: 90, frameRate: 1 },
+        audio: true,
+        systemAudio: 'include',
+        monitorTypeSurfaces: 'include',
+        selfBrowserSurface: 'exclude',
+        surfaceSwitching: 'include',
       } as DisplayMediaStreamOptions);
     } catch (err) {
+      if (gen !== this.generation) return;
       const name = err instanceof DOMException ? err.name : '';
-      if (name === 'NotAllowedError' || name === 'AbortError') throw new AudioSourceError(MSG.captureCancelled);
-      if (name === 'NotSupportedError' || name === 'TypeError') throw new AudioSourceError(MSG.captureUnsupported);
+      if (name === 'NotAllowedError' || name === 'AbortError') throw new AudioSourceError('cancelled');
+      if (name === 'NotSupportedError' || name === 'TypeError') throw new AudioSourceError('systemUnsupported');
       throw err;
     }
-    // Name what is captured from the video track before stopping it (we only need audio).
-    const what = describeCapture(stream.getVideoTracks()[0]);
+    // Name what is shared from the video track, then stop it: only the audio is used.
+    const what = describeSurface(stream.getVideoTracks()[0]);
     for (const t of stream.getVideoTracks()) t.stop();
     if (gen !== this.generation) { stopStream(stream); return; }
-    const track = stream.getAudioTracks()[0];
-    if (!track) {
+    if (!stream.getAudioTracks()[0]) {
       stopStream(stream);
-      throw new AudioSourceError(MSG.noCaptureAudio);
+      throw new AudioSourceError('noAudio');
     }
-    this.attachStream(stream, ctx, 'capture', what);
+    this.attachStream(stream, ctx, 'system', what);
     await ctx.resume();
   }
 
@@ -298,37 +209,7 @@ export class AudioEngine {
     return ctx;
   }
 
-  private attachMedia(el: HTMLMediaElement, ctx: AudioContext, errorMsg: () => string): void {
-    el.hidden = true;
-    // Files and links loop: the visual keeps going; 'ended' never fires while looping.
-    el.loop = true;
-    (el as HTMLVideoElement).playsInline = true;
-    this.media = el;
-    const node = ctx.createMediaElementSource(el);
-    node.connect(this.analyser!);
-    node.connect(ctx.destination);
-    const on = (type: string, fn: () => void) => {
-      el.addEventListener(type, fn);
-      this.teardown.push(() => el.removeEventListener(type, fn));
-    };
-    on('play', () => this.updateState({ playing: true }));
-    on('pause', () => this.updateState({ playing: false }));
-    on('ended', () => this.updateState({ playing: false }));
-    on('timeupdate', () => this.updateState({ currentTime: el.currentTime }));
-    on('loadedmetadata', () => this.updateState({ duration: el.duration }));
-    on('error', () => {
-      this.updateState({ playing: false });
-      this.fire('error', new AudioSourceError(errorMsg()));
-    });
-    this.teardown.push(() => {
-      el.pause();
-      el.removeAttribute('src');
-      el.load();
-      node.disconnect();
-    });
-  }
-
-  private attachStream(stream: MediaStream, ctx: AudioContext, kind: 'mic' | 'capture', label: string): void {
+  private attachStream(stream: MediaStream, ctx: AudioContext, kind: SourceKind, label: string): void {
     const node = ctx.createMediaStreamSource(stream);
     node.connect(this.analyser!); // analyser only: never to destination
     const track = stream.getAudioTracks()[0];
@@ -341,32 +222,7 @@ export class AudioEngine {
       stopStream(stream);
     });
     this.liveStart = ctx.currentTime;
-    this.updateState({
-      source: kind, label, playing: true, live: true, seekable: false, currentTime: 0, duration: Infinity,
-    });
-  }
-
-  /**
-   * A media element without CORS access feeds zeros into the graph. Chrome usually fails the load
-   * outright when crossOrigin is set, but a cross-origin redirect can still taint it silently.
-   * Count playing time in pure digital silence; give up after CORS_SILENCE_S.
-   */
-  private watchCorsSilence(el: HTMLMediaElement): void {
-    let silentFor = 0;
-    let last = 0;
-    const id = window.setInterval(() => {
-      const now = performance.now() / 1000;
-      const dt = last ? now - last : 0;
-      last = now;
-      if (el.paused || el.readyState < 3 || !this.extractor) return;
-      if (!this.extractor.isDigitalSilence()) { window.clearInterval(id); return; }
-      silentFor += dt;
-      if (silentFor >= CORS_SILENCE_S) {
-        window.clearInterval(id);
-        this.fire('error', new AudioSourceError(MSG.corsSilence));
-      }
-    }, 100);
-    this.teardown.push(() => window.clearInterval(id));
+    this.updateState({ source: kind, label, playing: true });
   }
 
   private teardownSource(): void {
@@ -374,14 +230,11 @@ export class AudioEngine {
     for (const fn of this.teardown.splice(0).reverse()) {
       try { fn(); } catch { /* best effort */ }
     }
-    this.media = null;
     this.extractor?.reset();
-    this.updateState({
-      source: null, label: '', playing: false, live: false, seekable: false, currentTime: 0, duration: NaN,
-    });
+    if (this._state.source !== null || this._state.playing) this.updateState({ source: null, label: '', playing: false });
   }
 
-  private updateState(patch: Partial<TransportState>): void {
+  private updateState(patch: Partial<ListenState>): void {
     Object.assign(this._state, patch);
     this.fire('state', this._state);
   }
@@ -392,19 +245,19 @@ export class AudioEngine {
 }
 
 /**
- * What a display capture shares, as far as the browser tells: the surface type from the
+ * What a system-audio share is, as far as the browser tells: the surface type from the
  * video track's settings, and for a window (or a tab, when it carries one) the title in the
  * track label. Chrome labels tabs "web-contents-media-stream://..." and screens / windows
- * "screen:..." / "window:...", which are ids, not names.
+ * "screen:..." / "window:...", which are ids, not names. Lower case; skins set the case.
  */
-export function describeCapture(track: MediaStreamTrack | undefined): string {
-  if (!track) return 'CHROME TAB';
+export function describeSurface(track: MediaStreamTrack | undefined): string {
+  if (!track) return 'entire screen';
   const surface = (track.getSettings() as MediaTrackSettings & { displaySurface?: string }).displaySurface;
   const label = track.label.trim();
   const meaningful = !!label && !/^(web-contents-media-stream:|screen:|window:|tab:)/i.test(label) && !/^[\w-]+:\d+(:\d+)?$/.test(label);
-  if (surface === 'monitor') return 'ENTIRE SCREEN';
-  if (surface === 'window') return meaningful ? label.toUpperCase() : 'APP WINDOW';
-  return meaningful ? label.toUpperCase() : 'CHROME TAB';
+  if (surface === 'monitor' || !surface) return 'entire screen';
+  if (surface === 'window') return meaningful ? label : 'app window';
+  return meaningful ? label : 'chrome tab';
 }
 
 function stopStream(s: MediaStream): void {

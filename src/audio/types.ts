@@ -27,35 +27,21 @@ export interface AudioFrame {
   beatStrength: number;
   /** Band values before rise/fall smoothing. Same scale as bass/mid/high. */
   raw: BandValues;
-  /** True while a source is producing sound (file/link playing, or mic/capture live). */
+  /** True while a source is listening (system audio or mic). */
   playing: boolean;
-  /** Seconds. Media position for file/link, seconds since start for mic/capture, 0 when idle. */
+  /** Seconds since listening started, 0 when idle. */
   time: number;
-  /** Seconds. Media duration for file/link once known, otherwise 0 (live or unknown). */
-  duration: number;
 }
 
 export function silentFrame(): AudioFrame {
   return {
     bass: 0, mid: 0, high: 0, level: 0, peak: 0, beat: false, beatStrength: 0,
-    raw: { bass: 0, mid: 0, high: 0 }, playing: false, time: 0, duration: 0,
+    raw: { bass: 0, mid: 0, high: 0 }, playing: false, time: 0,
   };
 }
 
-export type SourceKind = 'file' | 'mic' | 'url' | 'capture';
-
-/** Sources without a timeline: no play/pause, no seek. */
-export const isLiveSource = (k: SourceKind | null): boolean => k === 'mic' || k === 'capture';
-
-/** Payload type per source kind, so setSource is checked at the call site. */
-export interface SourcePayloads {
-  file: File;
-  mic: { deviceId?: string } | undefined;
-  /** Direct audio URL. The host must send CORS headers or analysis reads silence. */
-  url: string;
-  /** getDisplayMedia tab capture (Chrome/Edge desktop). */
-  capture: undefined;
-}
+/** Audio sources: system audio (getDisplayMedia) and the microphone (getUserMedia). */
+export type SourceKind = 'system' | 'mic';
 
 /** Tunables from the "Audio response" param section. */
 export interface AudioResponse {
@@ -70,32 +56,40 @@ export interface AudioResponse {
   beatThreshold: number;
 }
 
-export interface TransportState {
+export interface ListenState {
+  /** The source that is listening, null when idle. */
   source: SourceKind | null;
-  /** Display name, e.g. file name, link host, mic device label. */
+  /** What is shared (entire screen, chrome tab, a window title) or the mic device label. Lower case is up to the skin. */
   label: string;
+  /** True while a source is live. */
   playing: boolean;
-  /** True for mic and capture: no timeline, shown as "Live". */
-  live: boolean;
-  /** Seekable sources only (file, url). */
-  seekable: boolean;
-  currentTime: number;
-  /** Seconds; NaN until known, Infinity for live sources. */
-  duration: number;
 }
 
 export interface AudioEvents {
   level: (level: number, peak: number) => void;
   /** Fired from getFrame() on the frame an onset is detected. bpm is 0 while unknown. */
   beat: (strength: number, bpm: number) => void;
-  state: (state: Readonly<TransportState>) => void;
+  state: (state: Readonly<ListenState>) => void;
   error: (err: Error) => void;
 }
 
-/** Error with a message written for the user (shown verbatim in the status line). */
+/** Why a source could not start. Skins word these (see ui/listen.ts LISTEN_MSG). */
+export type SourceErrorCode =
+  | 'noAudio' | 'cancelled' | 'systemUnsupported' | 'micDenied' | 'micMissing' | 'micUnsupported';
+
+/** User-facing error from listen(): a code, and a default lower-case message. */
 export class AudioSourceError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(readonly code: SourceErrorCode) {
+    super(SOURCE_ERRORS[code]);
     this.name = 'AudioSourceError';
   }
 }
+
+export const SOURCE_ERRORS: Record<SourceErrorCode, string> = {
+  noAudio: 'no audio shared, switch on share system audio',
+  cancelled: 'sharing cancelled',
+  systemUnsupported: 'system audio needs chrome or edge on a computer',
+  micDenied: 'microphone blocked, allow it in the address bar',
+  micMissing: 'no microphone found',
+  micUnsupported: 'this browser cannot use the microphone here',
+};

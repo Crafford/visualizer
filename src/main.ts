@@ -1,32 +1,35 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
 import './ui/tokens.css';
+import './ui/shell.css';
 import { PrefsStore, applyTheme } from './ui/themes';
-import './ui/app.css';
 import { ParamStore } from './app/store';
 import { Stage } from './app/stage';
 import { AudioEngine } from './audio/AudioEngine';
 import { EFFECTS, DEFAULT_EFFECT, getEffect } from './effects/registry';
-import { createPanel } from './ui/Panel';
-import { createTransport } from './ui/Transport';
+import { createLiveStrip } from './ui/LiveStrip';
 import { installTooltips } from './ui/components/Tooltip';
 import { PresetBank } from './presets/store';
 import { h, svg } from './ui/dom';
 import { ICONS } from './ui/icons';
+import { ListenController } from './ui/listen';
+import { getSkin } from './ui/skins';
+import type { SkinContext, SkinPanel } from './ui/skins/types';
 import { canvasPatch, type UiMode } from './app/canvasMode';
 import { withPngText } from './app/pngMeta';
+import { version } from '../package.json';
 
 /*! VZ-01 Visualizer. Copyright (C) 2026 Jaco Crafford. https://github.com/Crafford/visualizer
  *  Licensed AGPL-3.0-only with additional attribution terms (see NOTICE). */
 console.info('%cVZ-01 Visualizer%c by Jaco Crafford\nhttps://github.com/Crafford/visualizer (AGPL-3.0, see NOTICE)',
   'font-weight:bold', 'font-weight:normal');
 
-// UI chrome prefs (theme, panel open) first, so the first paint has the right theme.
+// UI chrome prefs (skin, panel open) first, so the first paint has the right skin.
 const prefs = new PrefsStore();
 applyTheme(prefs.get());
 
 // Input modality for focus rings: keyboard users get them, pointer / touch users never do
-// (a tap or drag focuses a dial's range input programmatically). See app.css.
+// (a tap or drag focuses a control programmatically). See shell.css.
 const setInput = (kind: 'pointer' | 'keyboard') => {
   if (document.documentElement.dataset.input !== kind) document.documentElement.dataset.input = kind;
 };
@@ -41,6 +44,7 @@ const mobile = matchMedia('(pointer: coarse)').matches;
 
 const store = new ParamStore(getEffect(DEFAULT_EFFECT)!, { mobile });
 const engine = new AudioEngine();
+const listen = new ListenController(engine);
 const presets = new PresetBank(EFFECTS, { mobile });
 
 // Audio response params flow into the engine; everything else is read by the effect per frame.
@@ -48,15 +52,16 @@ const AUDIO_KEYS = ['bassSens', 'midSens', 'highSens', 'smoothRise', 'smoothFall
 for (const k of AUDIO_KEYS) store.watch(k, (v) => engine.configure({ [k]: v }));
 
 const root = document.getElementById('app')!;
-// The canvas fills the window; the panel, transport and keys float over it.
+// The canvas fills the window; the panel, LIVE strip and keys float over it.
 const stageEl = h('main', { class: 'stage', 'aria-label': 'Visualization' });
 
 let stage: Stage | null = null;
 
 /** Fullscreen the whole app, so the panel stays toggleable in fullscreen. */
 const toggleFullscreen = () => {
-  if (document.fullscreenElement) void document.exitFullscreen();
-  else void document.documentElement.requestFullscreen?.();
+  // Denied or interrupted requests reject; nothing to report.
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  else document.documentElement.requestFullscreen?.().catch(() => {});
 };
 
 /** Local time as YYYYMMDD-HHMMSS. */
@@ -88,14 +93,18 @@ const setPanel = (open: boolean, focus = false) => {
   if (focus) (open ? panel.hideButton : panel.showKey).focus({ preventScroll: true });
 };
 
-const panel = createPanel(store, engine, presets, EFFECTS, prefs, {
-  screenshot: () => void screenshot(),
-  setEffect,
-  hide: () => setPanel(false, true),
-  toggle: () => setPanel(!prefs.get().panel, true),
-});
+const ctx: SkinContext = {
+  store, engine, presets, effects: EFFECTS, prefs, listen,
+  version: version.split('.').slice(0, 2).join('.'),
+  actions: {
+    screenshot: () => void screenshot(),
+    setEffect,
+    hide: () => setPanel(false, true),
+    toggle: () => setPanel(!prefs.get().panel, true),
+  },
+};
 
-/** Floating key (design 139:2 / 139:55): bare 48 px key with a 16 px icon, no LED (M14). */
+/** Floating key (TE 139:2 / 139:55, Braun 176:77 plates): a bare 48 px key with a 16 px icon, no LED. */
 const floatKey = (cls: string, icon: string, label: string, tip: string, onClick: () => void) => {
   const btn = h('button', { type: 'button', class: 'float-key', 'aria-label': label, 'data-tip': tip, onclick: onClick },
     svg(icon));
@@ -103,19 +112,43 @@ const floatKey = (cls: string, icon: string, label: string, tip: string, onClick
 };
 const fs = floatKey('float-fullscreen', ICONS.fullscreen, 'Fullscreen', 'Fullscreen', toggleFullscreen);
 
-// The transport keeps clear of the open panel's box (its target size, also mid-morph).
-const transport = createTransport(engine, () => panel.openRight());
-const shell = h('div', { class: 'shell' }, stageEl, panel.el, fs.el, transport.el);
+// The LIVE strip keeps clear of the open panel's box (its target size, also mid-morph).
+const live = createLiveStrip(engine, () => panel.openRight());
+
+// ---- skins: the panel is rendered by the active skin and re-rendered on a skin switch.
+// Values, LT / DRK, the panel open state and the listening source are app state and survive.
+let skinId = prefs.get().theme;
+let panel: SkinPanel = mountPanel(skinId, null);
+const shell = h('div', { class: 'shell' }, stageEl, panel.el, fs.el, live.el);
 root.append(shell);
+
+function mountPanel(id: string, old: SkinPanel | null): SkinPanel {
+  const skin = getSkin(id);
+  skin.loadFonts?.();
+  const hadFocus = !!old && old.el.contains(document.activeElement);
+  const next = skin.createPanel(ctx);
+  if (old) {
+    old.el.replaceWith(next.el);
+    old.dispose();
+  }
+  next.setOpen(prefs.get().panel, true);
+  next.hideButton.setAttribute('aria-expanded', String(prefs.get().panel));
+  if (hadFocus) next.el.querySelector<HTMLElement>('.dd-theme button, [data-focus-theme]')?.focus({ preventScroll: true });
+  return next;
+}
 
 let firstPanel = true;
 prefs.watch((p) => {
+  if (p.theme !== skinId) {
+    skinId = p.theme;
+    panel = mountPanel(skinId, panel);
+    live.relayout();
+  }
   shell.classList.toggle('panel-open', p.panel);
   panel.setOpen(p.panel, firstPanel);
   firstPanel = false;
   panel.hideButton.setAttribute('aria-expanded', String(p.panel));
-  // The transport moves alongside the morph.
-  transport.setPanelOpen(p.panel);
+  live.setPanelOpen(p.panel);
 });
 
 /**
@@ -190,17 +223,22 @@ window.addEventListener('keydown', (e) => {
     const open = !prefs.get().panel;
     // Keep focus somewhere visible: hiding from inside the panel lands on the show key,
     // showing from the show key lands on the hide button.
-    setPanel(open, panel.el.contains(document.activeElement));
+    setPanel(open, panel.el.contains(document.activeElement) || !!document.activeElement?.closest('.info-module'));
     return;
   }
-  // Space toggles playback when focus is not in a control.
+  // Escape closes an overlay the skin has open (the info module).
+  if (e.key === 'Escape' && !typing(e.target) && panel.escape?.()) {
+    e.preventDefault();
+    return;
+  }
+  // Space toggles listening when focus is not in a control.
   if (e.code === 'Space') {
     const t = e.target as HTMLElement;
-    if (t.closest('input, button, textarea, select, [role="slider"], [role="radio"], [role="combobox"], [role="listbox"]')) return;
+    if (t.closest('input, button, textarea, select, a, [role="slider"], [role="radio"], [role="switch"], [role="combobox"], [role="listbox"]')) return;
     e.preventDefault();
-    void engine.toggle();
+    listen.toggle();
   }
 });
 
 // Dev builds, or any build with ?debug, expose internals for the console and automated tests.
-if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) Object.assign(window, { store, engine, stage, presets, setEffect, prefs });
+if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) Object.assign(window, { store, engine, stage, presets, setEffect, prefs, listen });

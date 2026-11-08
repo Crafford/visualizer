@@ -9,21 +9,39 @@ export interface DropdownItem {
   /** Shorter text for the closed key when the label does not fit (the list shows the label). */ short?: string;
 }
 
+export interface DropdownApi extends Component {
+  setItems(items: readonly DropdownItem[], value: string): void;
+  set(value: string): void;
+  readonly value: string;
+}
+
+/** Skin hooks: classes and the caret, and per-item extras (Braun list LEDs). */
+export interface DropdownLook {
+  button?: string;
+  list?: string;
+  item?: string;
+  caret?: string;
+  /** Item content; default: number, label, selected dot. */
+  renderItem?(it: DropdownItem, selected: boolean): (Node | string)[];
+  /** Closed text; default: short ?? "num · label". */
+  buttonText?(it: DropdownItem): string;
+}
+
 /**
  * Key-styled select (WAI-ARIA select-only combobox): a key with the current item and a
  * chevron; opens an OLED list under it (design 84:11968). The selected item is orange with
  * a dot. Keys: Up/Down/Home/End move, Enter/Space pick, Escape/Tab close, Alt+Down opens.
  */
 export function createDropdown(
-  ariaLabel: string, onChange: (value: string) => void, cls = '',
-): Component & { setItems(items: readonly DropdownItem[], value: string): void; set(value: string): void; readonly value: string } {
+  ariaLabel: string, onChange: (value: string) => void, cls = '', look: DropdownLook = {},
+): DropdownApi {
   const listId = nextId('lb');
   const text = h('span', { class: 'dd-text' });
   const btn = h('button', {
-    type: 'button', class: 'key dd-button', role: 'combobox', 'aria-haspopup': 'listbox',
+    type: 'button', class: look.button ?? 'key dd-button', role: 'combobox', 'aria-haspopup': 'listbox',
     'aria-expanded': 'false', 'aria-controls': listId, 'aria-label': ariaLabel,
-  }, text, h('span', { class: 'dd-chevron' }, svg(ICONS.chevron)));
-  const list = h('ul', { class: 'dd-list', role: 'listbox', id: listId, 'aria-label': ariaLabel, tabindex: -1, hidden: true });
+  }, text, h('span', { class: 'dd-chevron' }, svg(look.caret ?? ICONS.chevron)));
+  const list = h('ul', { class: look.list ?? 'dd-list', role: 'listbox', id: listId, 'aria-label': ariaLabel, tabindex: -1, hidden: true });
   const el = h('div', { class: `dropdown ${cls}`.trim() }, btn, list);
 
   let items: readonly DropdownItem[] = [];
@@ -34,7 +52,7 @@ export function createDropdown(
   const fmt = (it: DropdownItem) => (it.num ? `${it.num} · ${it.label}` : it.label);
   const paintButton = () => {
     const it = items.find((x) => x.value === value);
-    text.textContent = it ? (it.short ?? fmt(it)) : '';
+    text.textContent = it ? (look.buttonText ? look.buttonText(it) : (it.short ?? fmt(it))) : '';
     btn.title = it?.short ? it.label : '';
   };
   const render = () => {
@@ -42,14 +60,15 @@ export function createDropdown(
       const sel = it.value === value;
       return h('li', {
         id: optId(i), role: 'option', 'aria-selected': String(sel),
-        class: ['dd-item', sel && 'is-selected', i === active && 'is-active'].filter(Boolean).join(' '),
+        class: [look.item ?? 'dd-item', sel && 'is-selected', i === active && 'is-active'].filter(Boolean).join(' '),
         onpointerdown: ((e: PointerEvent) => e.preventDefault()) as EventListener,
         onclick: () => pick(i),
         onpointermove: () => setActive(i),
       },
-      it.num ? h('span', { class: 'dd-num' }, it.num) : null,
-      h('span', { class: 'dd-label' }, it.label),
-      sel ? h('span', { class: 'dd-dot', 'aria-hidden': 'true' }, '●') : null);
+      ...(look.renderItem ? look.renderItem(it, sel) : [
+        it.num ? h('span', { class: 'dd-num' }, it.num) : null,
+        h('span', { class: 'dd-label' }, it.label),
+        sel ? h('span', { class: 'dd-dot', 'aria-hidden': 'true' }, '●') : null]));
     }));
   };
   const setActive = (i: number) => {

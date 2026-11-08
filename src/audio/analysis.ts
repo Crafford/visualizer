@@ -104,13 +104,6 @@ export class FeatureExtractor {
     this.flux = 0;
   }
 
-  /** True if the last read time-domain buffer was exactly zero (used for CORS-silence detection). */
-  isDigitalSilence(): boolean {
-    this.analyser.getFloatTimeDomainData(this.wave);
-    for (let i = 0; i < this.wave.length; i++) if (this.wave[i] !== 0) return false;
-    return true;
-  }
-
   extract(dt: number, cfg: AudioResponse, active: boolean, out: AudioFrame): void {
     this.clock += dt;
     let bass = 0, mid = 0, high = 0, level = 0;

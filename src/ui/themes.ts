@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms.
-import './themes/te.css';
-
 /**
- * UI chrome themes (panel, keys, transport, floating keys). They never touch the visualizer.
- * A theme has a light and a dark variant; the CSS selects on <html data-theme="<id>-<mode>">.
- * To add a theme: a CSS file defining the same tokens as themes/te.css under
- * [data-theme='<id>-light'] and [data-theme='<id>-dark'], imported here, and one entry below.
+ * UI skins (panel, keys, LIVE strip, floating keys). They never touch the visualizer.
+ * A skin has a light and a dark variant; CSS selects on <html data-theme="<id>-<mode>"> and
+ * <html data-skin="<id>">. The implementations are registered in skins/index.ts; this list is
+ * the data the prefs validate against (and the UI theme dropdown shows, in each skin's case).
  */
 export type ThemeMode = 'light' | 'dark';
 
-export interface UiTheme { id: string; label: string; /** Text on the closed dropdown key, when the label is too long. */ short?: string }
+export interface UiTheme { id: string; /** Dropdown text, lower case (skins set the case). */ label: string }
 
+/** TE stays the default skin (first). */
 export const THEMES: readonly UiTheme[] = [
-  { id: 'te', label: 'Teenage Engineering', short: 'Teenage Eng.' },
+  { id: 'te', label: 'teenage eng.' },
 ];
 
 export interface UiPrefs {
@@ -75,6 +74,7 @@ export function savePrefs(p: UiPrefs): void {
 
 export function applyTheme(p: Pick<UiPrefs, 'theme' | 'mode'>): void {
   document.documentElement.dataset.theme = `${p.theme}-${p.mode}`;
+  document.documentElement.dataset.skin = p.theme;
 }
 
 /**

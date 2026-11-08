@@ -12,8 +12,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Visualizer</title>
     <script>
-      // Theme before the first paint (same rule as src/ui/themes.ts loadPrefs): the mode is
-      // always the system colour scheme on load. main.ts re-applies it.
+      // Skin and mode before the first paint (same rule as src/ui/themes.ts loadPrefs): the
+      // mode is always the system colour scheme on load. main.ts re-applies it.
       (function () {
         var mode = 'light', theme = 'te';
         try { if (matchMedia('(prefers-color-scheme: dark)').matches) mode = 'dark'; } catch (e) {}
@@ -22,6 +22,7 @@
           if (p.theme === 'te') theme = p.theme;
         } catch (e) {}
         document.documentElement.dataset.theme = theme + '-' + mode;
+        document.documentElement.dataset.skin = theme;
       })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />

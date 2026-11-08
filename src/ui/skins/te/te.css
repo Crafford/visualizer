@@ -1,138 +1,9 @@
 /* SPDX-License-Identifier: AGPL-3.0-only
    Copyright (C) 2026 Jaco Crafford. See NOTICE for additional terms. */
 /*
- * Component styles for the TE UI (Figma "Viz" / TE). Colours, gradients and shadows come
- * from the theme tokens (themes/te.css); geometry and type from tokens.css.
+ * Teenage Engineering skin components (Figma "Viz" / TE). Colours, gradients and shadows come
+ * from te-tokens.css; geometry and type from ui/tokens.css. Shell parts live in ui/shell.css.
  */
-
-/* ---------------------------------------------------------------- base */
-*, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
-body {
-  background: var(--page-bg);
-  color: var(--ink);
-  font: 400 var(--fs-key)/1.2 var(--f-mono);
-  font-synthesis: none;
-  -webkit-font-smoothing: antialiased;
-  overflow: hidden;
-}
-button, input, select { font: inherit; color: inherit; }
-h1, h2, p { margin: 0; font-weight: inherit; font-size: inherit; }
-.sr-only {
-  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
-  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
-}
-:focus-visible { outline: 1.5px solid var(--accent); outline-offset: 2px; }
-/* Focus rings are for keyboard users only: main.ts sets data-input="pointer" on <html> on
-   every pointerdown (mouse, pen, touch) and "keyboard" on navigation keys. Programmatic
-   focus after a tap or drag (dial, seek bar, panel toggle) never shows a ring. */
-:root[data-input='pointer'] :focus-visible { outline: none; }
-[hidden] { display: none !important; }
-.spacer { flex: 1; }
-
-/* ---------------------------------------------------------------- stage (full window) */
-.stage { position: fixed; inset: 0; overflow: hidden; background: var(--page-bg); }
-.stage-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.stage-error { position: absolute; inset: auto 0 50% 0; text-align: center; color: var(--muted); }
-
-/* ---------------------------------------------------------------- floating panel */
-/* The card sits --edge from the top left. Hidden, it is the show-panel key: PanelMorph.ts fades
-   the contents, then shrinks the card (width / height, so corners, border and shadow stay
-   crisp) to the 48 px floating key anchored at the same top left (.is-min), and reverses that
-   to show it. */
-.panel {
-  position: fixed; z-index: 10;
-  top: var(--edge); left: var(--edge);
-  width: var(--panel-w);
-  max-height: calc(100dvh - 2 * var(--edge));
-  display: flex; flex-direction: column;
-  overflow: hidden;
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  border-radius: var(--card-r);
-  box-shadow: var(--panel-shadow);
-  transition: border-color var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui), transform var(--t-ui) var(--ease-ui);
-}
-/* The content scrolls inside the card. The native scroll bar is hidden; an overlay thumb
-   (Panel.ts) fades in while the pointer is over the panel. Soft fade masks at the top and
-   bottom edges appear only when there is more content in that direction. */
-@property --fade-top { syntax: '<length>'; inherits: false; initial-value: 0px; }
-@property --fade-bottom { syntax: '<length>'; inherits: false; initial-value: 0px; }
-.panel-scroll {
-  flex: 1 1 auto; min-height: 0;
-  overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
-  scrollbar-width: none;
-  --fade-top: 0px; --fade-bottom: 0px;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent 100%);
-  transition: --fade-top var(--t-ui) var(--ease-ui), --fade-bottom var(--t-ui) var(--ease-ui);
-}
-.panel-scroll::-webkit-scrollbar { display: none; }
-.panel-scroll.can-up { --fade-top: 28px; }
-.panel-scroll.can-down { --fade-bottom: 28px; }
-.panel-scrollbar {
-  position: absolute; top: 8px; bottom: 8px; right: 3px; width: 4px;
-  opacity: 0; pointer-events: none;
-  transition: opacity 200ms var(--ease-ui);
-}
-.panel-thumb {
-  position: absolute; left: 0; right: 0; top: 0; min-height: 24px;
-  border-radius: 2px; background: var(--scroll-thumb);
-  transition: background-color var(--t-ui) var(--ease-ui);
-}
-/* Wider grab area than the 4 px thumb. */
-.panel-thumb::before { content: ''; position: absolute; inset: -2px -3px -2px -6px; }
-@media (hover: hover) {
-  .panel:hover .panel-scrollbar.is-needed { opacity: 1; }
-  .panel:hover .panel-scrollbar.is-needed .panel-thumb { pointer-events: auto; }
-}
-.panel-scrollbar.is-dragging, .panel-scrollbar.is-scrolling.is-needed { opacity: 1; }
-.panel-scrollbar.is-dragging .panel-thumb { pointer-events: auto; background: var(--muted); }
-@media (prefers-reduced-motion: reduce) { .panel-scrollbar { transition: none; } }
-
-/* Key face (the floating key's fill) and the key itself, over the contents. Hidden while open. */
-.panel-face {
-  position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background: var(--float-key-bg); opacity: 0;
-}
-.panel-face::before {
-  content: ''; position: absolute; inset: 0; background-color: transparent;
-  transition: background-color var(--t-ui) var(--ease-ui);
-}
-.panel-key {
-  position: absolute; inset: 0; z-index: 2; margin: 0; padding: 0;
-  border: 0; background: transparent; color: var(--key-fg); cursor: pointer;
-  visibility: hidden; -webkit-tap-highlight-color: transparent;
-}
-.panel-key:focus-visible { outline: none; }
-/* The sidebar icon: from the header button's spot (--icon-x / --icon-y, measured) to the centre
-   of the key. */
-.panel-key-icon {
-  position: absolute; left: 0; top: 0; width: 16px; height: 16px; display: block;
-  transform: translate(var(--icon-x, 20px), var(--icon-y, 14.5px));
-}
-.panel.is-morphing .panel-key, .panel.is-min .panel-key { visibility: visible; }
-/* While morphing and minimised the contents keep their open size (and scroll position);
-   the card clips them. */
-.panel.is-morphing .panel-scroll, .panel.is-min .panel-scroll { flex: none; }
-.panel.is-morphing .panel-scrollbar, .panel.is-min .panel-scrollbar { display: none; }
-.panel.is-morphing { transition: none; }
-.panel.is-min {
-  width: var(--float-key); height: var(--float-key);
-  border-color: var(--float-key-border); border-radius: var(--float-key-r);
-  box-shadow: var(--float-key-shadow);
-}
-.panel.is-min .panel-scroll { visibility: hidden; opacity: 0; }
-.panel.is-min .panel-face { opacity: 1; }
-.panel.is-min .panel-key-icon {
-  transform: translate(calc((var(--float-key) - 2px - 16px) / 2), calc((var(--float-key) - 2px - 16px) / 2));
-}
-/* Minimised: the floating key's hover wash, press and focus ring (141:435, 5 px out, r9). */
-@media (hover: hover) { .panel.is-min:hover .panel-face::before { background-color: var(--key-hover); } }
-.panel.is-min:has(.panel-key:active) { box-shadow: var(--key-press-shadow); transform: translateY(1px); transition-duration: var(--t-press); }
-.panel.is-min:has(.panel-key:active) .panel-face::before { background-color: var(--key-press); transition-duration: var(--t-press); }
-:root:not([data-input='pointer']) .panel.is-min:has(.panel-key:focus-visible) { outline: 1.5px solid var(--accent); outline-offset: 3.5px; }
-
 .panel-head { display: flex; flex-direction: column; gap: 16px; padding: 14px var(--pad-x) 18px; }
 .title-row { display: flex; align-items: center; gap: 8px; height: 17px; }
 .panel-title { font: 500 var(--fs-title)/17px var(--f-mono); letter-spacing: var(--ls-title); color: var(--ink); }
@@ -179,7 +50,7 @@ h1, h2, p { margin: 0; font-weight: inherit; font-size: inherit; }
 }
 /* Hover wash / press shade: an overlay under the legend (gradients cannot be transitioned,
    a background-color can). */
-.key::before, .float-key::before {
+.key::before {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   border-radius: inherit; background-color: transparent;
   transition: background-color var(--t-ui) var(--ease-ui);
@@ -266,31 +137,31 @@ h1, h2, p { margin: 0; font-weight: inherit; font-size: inherit; }
 }
 .oled-dim { color: var(--oled-dim); font-weight: 400; letter-spacing: var(--ls-key); }
 .oled-strong { color: var(--oled-fg); font-weight: 500; letter-spacing: var(--ls-label); }
-.oled-source { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* Main row (M15, 84:11269 "Main"): source title over its state, big BPM right, bottom aligned. */
+.oled-main { display: flex; align-items: flex-end; gap: 12px; min-height: 44px; }
+.oled-source { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-bottom: 2px; }
 .oled-title {
-  font: 500 var(--fs-oled-xl)/27px var(--f-mono); letter-spacing: var(--ls-chip);
+  font: 500 14px/18px var(--f-mono); letter-spacing: var(--ls-chip);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .oled-hint {
+  min-height: 13px;
   font: 400 var(--fs-key)/13px var(--f-mono); letter-spacing: var(--ls-key); color: var(--oled-dim);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere;
 }
-.oled-spectrum { display: flex; align-items: flex-end; gap: 2px; height: 22px; }
-.oled-spectrum .bar { flex: 1; min-width: 0; height: 2px; border-radius: 0.5px; background: rgba(242, 242, 238, 0.85); }
-.oled-spectrum .bar.is-mark { background: color-mix(in srgb, var(--oled-blue) 85%, transparent); }
-.oled-spectrum .bar.is-hot { background: color-mix(in srgb, var(--accent) 85%, transparent); }
-.oled-spectrum .bar.is-idle { background: var(--oled-off); }
-.oled-spectrum .bar.is-idle.is-mark { background: var(--oled-blue); }
+.oled-on { color: var(--accent); }
+.oled-tempo { flex: none; display: flex; align-items: flex-end; gap: 4px; }
+.oled-bpm { font: 500 34px/44px var(--f-mono); color: var(--oled-dim); letter-spacing: 0; min-width: 2ch; text-align: right; }
+.oled-bpm.is-set { color: var(--oled-fg); }
+.oled-bpm-legend { line-height: 13px; padding-bottom: 6px; }
 .oled-meters { display: flex; align-items: center; gap: 8px; height: 13px; font-size: var(--fs-key); line-height: 13px; }
 .oled-meter { flex: 1; display: flex; gap: 2px; height: 6px; }
 .oled-meter .seg { flex: 1; border-radius: 0.5px; background: var(--oled-off); }
 .oled-meter .seg.is-hot { background: var(--oled-hot-off); }
 .oled-meter .seg.on { background: var(--oled-fg); }
 .oled-meter .seg.is-hot.on { background: var(--accent); }
-.oled-bpm { min-width: 3ch; text-align: right; letter-spacing: 0.04em; }
-.oled-time { color: var(--oled-green); font-weight: 500; letter-spacing: 0.04em; }
 
-/* OLED fields (link URL, preset name) */
+/* OLED field (preset name) */
 .oled-field {
   display: flex; align-items: center; gap: 4px;
   flex: 1; min-width: 0; height: var(--key-h); padding: 0 10px;
@@ -303,23 +174,41 @@ input.oled-field::placeholder { color: var(--oled-placeholder); text-transform: 
 input.oled-field:focus { outline: none; }
 
 /* ---------------------------------------------------------------- input */
-.input-pane { display: flex; flex-direction: column; gap: 14px; }
-.input-row { display: flex; align-items: center; gap: 10px; min-width: 0; height: var(--key-h); }
-.input-row .oled-field + .key { flex: none; }
-.key-load { width: 70px; margin-left: -4px; }
-.input-aside {
-  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font: 400 var(--fs-key)/13px var(--f-mono); letter-spacing: var(--ls-chip); color: var(--muted); text-transform: uppercase;
+/* M15 (84:11369): SYSTEM [slide switch] MIC, the LISTEN key (latching, LED), hint below. */
+.input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: center; min-width: 0; height: var(--key-h); }
+.te-switch { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sw-legend {
+  font: 500 var(--fs-key)/13px var(--f-mono); letter-spacing: var(--ls-key); color: var(--muted);
+  cursor: pointer; user-select: none; transition: color var(--t-ui) var(--ease-ui), opacity var(--t-ui) var(--ease-ui);
 }
-.input-aside.is-live { color: var(--accent); font-weight: 500; font-size: var(--fs-label); letter-spacing: var(--ls-key); }
+.te-switch[data-pos='system'] .sw-left, .te-switch[data-pos='mic'] .sw-right { color: var(--ink); }
+.te-switch.is-locked .sw-left { opacity: 0.35; cursor: default; }
+.te-switch .sw-body {
+  --travel: 18px; --pos: 0;
+  position: relative; flex: none; width: 40px; height: 16px; border-radius: 3px;
+  background: var(--switch-slot); box-shadow: var(--switch-slot-shadow);
+  cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent;
+}
+.te-switch[data-pos='mic'] .sw-body { --pos: 1; }
+.te-switch .sw-slot, .te-switch .sw-glass { display: none; }
+.te-switch .sw-thumb {
+  position: absolute; left: 1px; top: 1px; width: 20px; height: 14px; border-radius: 3px;
+  display: flex; align-items: center; justify-content: center; gap: 2px;
+  background: var(--switch-cap); box-shadow: inset 0 0 0 1px var(--switch-cap-edge), 0 1px 1.5px rgba(0, 0, 0, 0.3);
+  transform: translateX(calc(var(--drag, var(--pos)) * var(--travel)));
+  transition: transform var(--t-ui) var(--ease-ui);
+}
+.te-switch.is-dragging .sw-thumb { transition: none; }
+.te-switch .sw-ridge { width: 1px; height: 6px; background: var(--switch-cap-edge); }
+:root[data-input='keyboard'] .te-switch .sw-body:focus-visible { outline: 1.5px solid var(--accent); outline-offset: 2px; }
+.key-listen { width: 100%; }
+.key-listen[aria-pressed='true'] { color: var(--accent); }
+.key-listen .led { top: 5px; left: 5px; }
 .hint {
   font: 400 var(--fs-label)/14px var(--f-mono); letter-spacing: var(--ls-key);
   text-transform: uppercase; color: var(--muted);
 }
-.group-input > .input-pane { margin-top: 0; }
-.status:empty { display: none; }
-.status.is-error { color: var(--accent); }
-.status.is-error::before { content: '\00d7  '; }
+.input-hint.is-live { color: var(--accent); }
 
 /* ---------------------------------------------------------------- presets */
 .preset-row { display: grid; grid-template-columns: 1fr 42px; gap: 6px; }
@@ -475,74 +364,3 @@ input.oled-field:focus { outline: none; }
 .output-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .output-row .key-wide { width: auto; }
 
-/* ---------------------------------------------------------------- tooltip */
-.tooltip {
-  position: fixed; z-index: 100; pointer-events: none;
-  padding: 5px 8px; border-radius: 3px;
-  background: var(--oled-bg); color: var(--oled-fg); box-shadow: var(--tooltip-shadow);
-  font: 400 var(--fs-key)/13px var(--f-mono); letter-spacing: var(--ls-label); text-transform: uppercase;
-  white-space: nowrap;
-}
-
-/* ---------------------------------------------------------------- floating keys */
-/* M12 (84:18476 / 84:18645): bare 48 px keys, no plate, --edge from the window edges.
-   The wrapper only positions the key. The show-panel key is the minimised panel (M13). */
-.float-plate {
-  position: fixed; z-index: 11; top: var(--edge);
-  transition: opacity var(--t-panel) var(--ease), transform var(--t-panel) var(--ease), visibility 0s linear 0s;
-}
-.float-fullscreen { right: var(--edge); }
-.float-key {
-  position: relative; isolation: isolate; display: grid; place-items: center;
-  width: var(--float-key); height: var(--float-key); padding: 0;
-  border: 1px solid var(--float-key-border); border-radius: 6px;
-  background: var(--float-key-bg); box-shadow: var(--float-key-shadow);
-  color: var(--key-fg); cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: color var(--t-ui) var(--ease-ui), border-color var(--t-ui) var(--ease-ui),
-    box-shadow var(--t-ui) var(--ease-ui), transform var(--t-ui) var(--ease-ui);
-}
-.float-key:hover::before { background-color: var(--key-hover); }
-.float-key:active { box-shadow: var(--key-press-shadow); transform: translateY(1px); transition-duration: var(--t-press); }
-.float-key:active::before { background-color: var(--key-press); transition-duration: var(--t-press); }
-/* Focus (141:435): the ring sits 5 px out from the key (58 px box). */
-.float-key:focus-visible { outline-offset: 3.5px; }
-
-/* ---------------------------------------------------------------- transport */
-.plate {
-  border: 1px solid var(--plate-border); border-radius: 10px;
-  background: var(--plate-bg); box-shadow: var(--plate-shadow);
-}
-.transport {
-  position: fixed; z-index: 11; bottom: var(--edge); left: 50%; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 6px; padding: 6px; max-width: calc(100vw - 32px);
-  transition: opacity var(--t-panel) var(--ease), visibility 0s linear 0s;
-}
-/* Slides with the panel once it is on screen (not from the default position when it appears). */
-.transport.is-placed { transition: opacity var(--t-panel) var(--ease), left var(--t-panel) var(--ease), visibility 0s linear 0s; }
-/* Main.ts / Transport.ts decide visibility: file and link whenever loaded; live sources only
-   while the panel is hidden; nothing loaded: hidden. */
-.transport.is-hidden {
-  opacity: 0; visibility: hidden; pointer-events: none;
-  transition: opacity var(--t-panel) var(--ease), visibility 0s linear var(--t-panel);
-}
-.t-play { width: 44px; height: 44px; padding: 0; border-radius: 6px; flex: none; }
-.t-strip {
-  display: flex; align-items: center; gap: 10px;
-  flex: 0 1 auto; width: 378px; min-width: 0; height: 44px; padding: 0 12px; border-radius: 6px;
-  background: var(--oled-bg); box-shadow: var(--strip-frame); color: var(--oled-fg);
-}
-.transport.is-live .t-strip { width: 360px; gap: 12px; padding: 0 14px; }
-.t-time { font: 500 var(--fs-section)/14px var(--f-mono); letter-spacing: 0.04em; min-width: 36px; flex: none; }
-.t-total { font-weight: 400; color: var(--oled-dim); text-align: right; }
-.t-live { font: 500 var(--fs-section)/14px var(--f-mono); letter-spacing: 0.08em; color: var(--accent); flex: none; }
-.t-spectrum { flex: 1; height: 22px; }
-.t-cells { flex: 1; min-width: 0; display: flex; align-items: center; gap: 2px; height: 12px; border-radius: 2px; }
-.t-cells.is-seekable { cursor: pointer; }
-.t-cells:focus-visible { outline-offset: 4px; }
-.t-cells .cell { flex: 1; height: 8px; border-radius: 0.5px; background: var(--oled-off); }
-.t-cells .cell.on { background: var(--oled-fg); }
-.t-cells .cell.head { height: 12px; background: var(--accent); }
-
-/* Theme switch: a short cross-fade of the whole page (View Transitions, main.ts). */
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--t-ui); animation-timing-function: var(--ease-ui); }
