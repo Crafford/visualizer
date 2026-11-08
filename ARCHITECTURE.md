@@ -33,6 +33,8 @@ src/
     smoke/                smoke effect: params.ts (SMOKE_PARAMS, legacy `mode` preset migration), SmokeEffect
                           (TUNE, audio mapping, splat), SmokeTrails (trail, Multiply/Screen composite), shaders/
   ui/
+    info.ts               the info module shared by the skins: content (about, note, help; lower case)
+                          and behaviour (attachInfo: docking, info key, close, Escape, focus)
     tokens.css            skin-independent tokens (TE type scale, geometry, motion, --edge)
     shell.css / shell.ts  the shared panel card (scroll, overlay thumb, edge fades, minimise morph via
                           PanelMorph.ts), floating keys, LIVE strip, tooltip, spectrum bars; crossFade()
@@ -50,11 +52,11 @@ src/
     skins/
       types.ts            Skin, SkinContext, SkinPanel, PanelActions
       index.ts            SKINS registry: te (default), braun
-      te/                 te-tokens.css, te.css, TePanel.ts, TeDisplay.ts (OLED), TeInput.ts
+      te/                 te-tokens.css, te.css, TePanel.ts, TeDisplay.ts (OLED), TeInput.ts, TeInfo.ts
       braun/              braun-tokens.css (generated 1:1 from the Figma variables + effect styles),
                           braun.css, BraunPanel.ts, controls.ts (faders, dials, A1 rotary, keys, swatch,
                           VFD dropdown look), Vfd.ts (display, seven-segment BPM, clip meter),
-                          InfoModule.ts
+                          InfoModule.ts (markup)
   presets/
     types.ts              Preset, PresetStorage, PresetFile, PRESET_SCHEMA
     store.ts              PresetBank: built-in Default per effect (from the schema), user presets in
@@ -242,7 +244,7 @@ the paper and stops, feathering at the edges. Wetness turns dry card into wet wa
    coverage, so overlapping inks mix subtractively. Result = mix(paper, ink colour, coverage) +
    paper texture + grain.
 
-Blend mode (`blend` toggle in Look, M11): Multiply is the composite above, unchanged (a 10 s
+Blend mode (`blend` toggle in Render, formerly Look, M11): Multiply is the composite above, unchanged (a 10 s
 fake-clock still is pixel-identical to M10: mean abs diff 0, max 0). Screen is additive light
 for dark paper: the splat carries ink x the source's sRGB colour instead of its absorbance
 (InkEffect.updateAbsorb), so rgb / a is the mean ink colour of a layer; coverage is exactly
@@ -381,8 +383,12 @@ supported, remembered per browser in `visualizer.source.v1`) and a latching list
 - Flipping the switch while listening hands over to the other source.
 - Cancelling the share dialog stops listening (LED off), no error. A share without audio stops
   listening and shows `noAudio` in the display.
-- Unsupported: the switch is locked to mic and the system end dimmed; the display / hint says
-  "system audio needs chrome or edge on a computer".
+- Unsupported: the switch is locked to mic and the system end dimmed; the display (TE) / the
+  switch tooltip says "system audio needs chrome or edge on a computer".
+
+The switch (`components/SlideSwitch.ts`, M16): a legend click selects its side; a press on the
+switch body without travel toggles; a drag (mouse, pen, touch) moves the slider live and snaps
+to the nearer end on release; arrows / Home / End select, Space / Enter flip.
 
 `ListenView`: `{ selected, systemSupported, latched, source, label, error }`.
 
@@ -448,7 +454,7 @@ skin. `paramSections(entry)` turns the schema into numbered sections of `value`,
 | value | dial (grid of 3 or 4) | tall fader in section 1 (particles / plume), short fader in audio response, Atelier dial elsewhere |
 | rotary | radio keys, LED outside | A1 rotary selector |
 | selector | LED keys | capsule selector keys |
-| swatch | swatch key + hex | capsule well |
+| swatch | swatch key (hex as its tooltip, M16) | capsule well |
 
 Switching skin (UI theme dropdown, "TEENAGE ENG." / "braun" in each skin's case): main.ts
 disposes the panel and mounts the new skin's panel in place. Values, LT / DRK, the panel open
@@ -486,10 +492,17 @@ arrows (0.1, Shift x10), Page / Home / End, double-click resets, touch, no wheel
 selector turns its pointer to the detents (31 / 76 / 120 degrees), click a number or step with
 a click on the knob, drag around it, arrows.
 
-Info module (230:640): a second case docked 20 px right of the panel (over it below 760 px
-wide): VFD window with VZ1 and the version (package.json), about (maker, jaco.studio, x
-placeholder, licence with the source link), the note, help. The VZ1 key toggles it; the close
-key and Escape close it (focus returns to VZ1); hiding the panel closes it. TE has none.
+Info module (230:640): a second case with a VFD window (VZ1 and the version from
+package.json), about (maker, jaco.studio, x.com/jcrafford, licence with the source link), the
+note, help. Dropdown carets sit 12 px from the right edge in every VFD dropdown (257:1369).
+Section rules (`rule/section`) have the same colour in light and dark (M16).
+
+Info module, both skins (`ui/info.ts`, M16): the content is shared (lower case; TE sets upper
+case in CSS; the audio response help names the skin's controls, faders / dials). `attachInfo`
+mounts the skin's markup in the shell, docked 20 px right of the panel (`.info-module` in
+shell.css; over the panel below 760 px wide). The model name toggles it (aria-expanded,
+`is-open`); the close key and Escape close it (focus returns to the model name); hiding the
+panel closes it. Links open in a new tab (`rel="noopener"`).
 
 Layout (`main.ts`, all CSS): the stage is `position: fixed; inset: 0`, so the canvas always
 fills the window and the panel never resizes it (the ResizeObserver still sizes the
@@ -557,29 +570,34 @@ OKLab L because L*'s linear toe keeps mirrored darks distinguishable (OKLab send
 colour or the blend by hand never changes the UI mode; presets loaded later keep their colours.
 
 TE panel, top to bottom:
-- Title row: side-panel icon, VZ-01, version.
+- Title row: side-panel icon, VZ-01 (the info key, M16, Figma TE 290:2: on hover / keyboard
+  focus / open a recessed well grows right behind the name and the info icon fades in, orange
+  while open, 200 ms ease-out; the name never moves), version.
+- Info module (`TeInfo.ts`, 290:6 light / 290:148 dark, over canvas 291:101): a TE panel card
+  with INFO and CLOSE, an OLED window (INFO tag, version, VZ-01, tagline), ABOUT and HELP as
+  TE sections; legends and text upper case.
 - OLED (`skins/te/TeDisplay.ts`, M15 84:11269): effect tag (INK / SMOKE), preset (P01
   DEFAULT); the main row: source title (SYSTEM AUDIO / MIC) over its state (LISTENING in orange
-  · the surface or device; an error in orange; empty while idle) and the big BPM (--- until a
+  · the surface or device; an error in orange; idle: empty, or the unsupported reason, dim) and the big BPM (--- until a
   tempo); a 52-bar spectrum (`Spectrum.ts`) (log-spaced 40 Hz..14 kHz, a blue marker bar every
   11th, orange above 86% = peaking; a faint idle comb when idle) and the LVL meter (16
   segments, top 3 hot, a peak-hold segment). No track time. Updated from the engine's
   per-frame `level` event; no extra rAF loop.
-- UI: skin dropdown + LT / DRK.
 - Input (`TeInput.ts`, 84:11369): SYSTEM [slide switch] MIC, the LISTEN key (LED, orange
-  legend while latched), and a hint: what to do for the selected source while idle,
-  "LISTENING · <surface / device>" in orange while live, the unsupported or error reason.
+  legend while latched). No hint line (M16): the OLED shows the state.
+- UI: skin dropdown + LT / DRK (after Input since M16).
 - Visualization: INK / SMOKE dropdown (replaces the header segmented control).
 - Presets (see Presets).
 - Parameter sections, numbered across the active effect's sections and Audio response
-  (Ink: 01 PARTICLES, 02 TRAILS, 03 LOOK, 04 AUDIO RESPONSE; Smoke: 01 PLUME, 02 LOOK,
+  (Ink: 01 PARTICLES, 02 TRAILS, 03 RENDER, 04 AUDIO RESPONSE; Smoke: 01 PLUME, 02 RENDER,
   03 AUDIO RESPONSE): number tag, title, rule. Built from the schema by `fillControls`:
   toggles as LED keys (BLEND MODE: MULTIPLY / SCREEN, Ink and Smoke) first, then every number as a dial in a
   grid (4 columns when the count is a multiple of 4, else 3), small integer params (Sources
-  1..3) as radio keys with the LED outside, then colours as swatch keys (legend + hex; click
-  opens the native picker). `controlStyle.ts` holds the short legends, cap colours (orange /
+  1..3) as radio keys with the LED outside, then colours as swatch keys (legend only, the
+  hex is the tooltip; 20 px below the dials; click opens the native picker). `controlStyle.ts` holds the short legends, cap colours (orange /
   black / grey per the design for Ink; Smoke by analogy: Count and Density orange, motion
-  black, the softening dials grey) and the Ink Look order (INK, CONTRAST, SIZE, GRAIN).
+  black, the softening dials grey) and the Ink Render order (INK, CONTRAST, SIZE, GRAIN). The section was called Look before
+  M16 (section id `render`; param ids unchanged, so presets load as before).
 - Output: REC CLIP (disabled, "Coming soon" tooltip) and SCREENSHOT (primary key).
 
 Components:
@@ -606,7 +624,7 @@ right of it. It fades in place and only slides (left, 180 ms) on panel toggles w
 TE: orange LIVE, OLED bars; Braun: a smoked VFD window, "live" and green VFD bars.
 
 Keyboard: H toggles the panel; Space toggles listening unless focus is in a control; Escape
-closes the info module (Braun).
+closes the info module.
 
 ## Presets
 
@@ -653,5 +671,7 @@ static dials, eased transitions, overlay scroll bar with edge fades, canvas foll
 per-family transport, SYSTEM AUDIO labels. M12-M14 TE refinements (dark deck, focus states,
 minimise morph, wake lock, panel opacity, LT / DRK per visit). M15 input model (system audio /
 mic + listen; file, link and the transport removed), skin system (registry, abstract panel
-model, runtime switching), Braun skin from Figma variables, info module.
+model, runtime switching), Braun skin from Figma variables, info module. M16 Braun fixes
+(dropdown carets, switch drag and click, section rules equal in LT / DRK), shared info module and
+the TE info module, TE Input before UI, no input hint, no swatch hex, Look renamed Render.
 Next: performance tiers, mobile sheet, REC CLIP.

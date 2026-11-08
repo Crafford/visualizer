@@ -42,8 +42,11 @@
   --t-ui: 180ms;
   --t-press: 80ms;
   --ease-ui: cubic-bezier(0.2, 0, 0, 1);
+  /* Info key well (both skins, M16): 200 ms ease-out (Figma note on 256:1309). */
+  --t-model: 200ms;
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --t-panel: 0ms; --t-ui: 0ms; --t-press: 0ms; }
+  :root { --t-panel: 0ms; --t-ui: 0ms; --t-press: 0ms; --t-model: 0ms; }
 }

@@ -46,7 +46,7 @@ const BY_EFFECT: Record<string, Style> = {
   'ink:inkColor2': { short: 'INK 2' },
   'ink:inkColor3': { short: 'INK 3' },
   'ink:paperColor': { short: 'PAPER' },
-  // Smoke, by analogy: Plume = Particles (Count orange, motion black), Look = Look
+  // Smoke, by analogy: Plume = Particles (Count orange, motion black), Render = Render
   // (Density plays Ink's role: orange; the softening dials grey like Trails).
   'smoke:rise': { short: 'RISE', cap: 'black' },
   'smoke:density': { short: 'DENSITY', cap: 'orange' },

@@ -113,8 +113,8 @@ export function toggleRow(def: ToggleParamDef, store: ParamStore, legend: string
 // ---------------------------------------------------------------- dropdown
 
 /** VFD dropdown (257:1369): black glass, VFD text, filled caret; the list is a VFD menu with LED rows. */
-export const vfdDropdownLook = (o: { start?: boolean } = {}): DropdownLook => ({
-  button: `bn-dd${o.start ? ' bn-dd-start' : ''}`,
+export const vfdDropdownLook = (): DropdownLook => ({
+  button: 'bn-dd',
   list: 'bn-dd-list',
   item: 'bn-dd-item',
   caret: CARET,

@@ -18,7 +18,7 @@ export interface DisplayApi extends Component {
 /**
  * The TE OLED (design 84:11269, M15): effect tag and preset; the main row with the source title
  * (SYSTEM AUDIO / MIC) over its state (LISTENING in orange · the shared surface or mic device;
- * an error in orange; nothing while idle) and the big BPM readout (--- until a tempo); the
+ * an error in orange; idle: empty, or the unsupported reason, dim) and the big BPM readout (--- until a tempo); the
  * spectrum (Spectrum.ts) and the LVL meter. Driven by the engine's per-frame 'level' event.
  */
 export function createTeDisplay(engine: AudioEngine, listen: ListenController): DisplayApi {
@@ -29,7 +29,7 @@ export function createTeDisplay(engine: AudioEngine, listen: ListenController): 
   const title = h('div', { class: 'oled-title' }, 'SYSTEM AUDIO');
   const stateOn = h('span', { class: 'oled-on' });
   const stateRest = h('span');
-  const state = h('div', { class: 'oled-hint' }, stateOn, stateRest);
+  const state = h('div', { class: 'oled-hint', role: 'status', 'aria-live': 'polite' }, stateOn, stateRest);
 
   const spectrum = createSpectrum(engine);
   const segs: HTMLSpanElement[] = [];
@@ -72,7 +72,7 @@ export function createTeDisplay(engine: AudioEngine, listen: ListenController): 
     title.textContent = v.selected === 'mic' ? 'MIC' : 'SYSTEM AUDIO';
     if (v.error) { stateOn.textContent = SOURCE_ERRORS[v.error].toUpperCase(); stateRest.textContent = ''; }
     else if (v.source) { stateOn.textContent = 'LISTENING'; stateRest.textContent = ` · ${v.label.toUpperCase()}`; }
-    else { stateOn.textContent = ''; stateRest.textContent = ''; }
+    else { stateOn.textContent = ''; stateRest.textContent = v.systemSupported ? '' : SOURCE_ERRORS.systemUnsupported.toUpperCase(); }
     state.title = v.source ? v.label : '';
     if (!v.source) { setBpm(0); clearMeter(); spectrum.idle(); }
   }));

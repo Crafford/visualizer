@@ -39,11 +39,8 @@
   --strip-frame: var(--fx-style-vfd-strip);
   --f-ui: var(--font-ui), system-ui, sans-serif;
   --f-vfd: var(--font-vfd), ui-monospace, monospace;
-  /* Info key and info module motion (200 ms ease-out, Figma note on 256:1309). */
-  --t-model: 200ms;
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
 }
-@media (prefers-reduced-motion: reduce) { :root[data-skin='braun'] { --t-model: 0ms; } }
+/* Info key motion (--t-model, --ease-out): ui/tokens.css. */
 
 :root[data-skin='braun'] body { font: 400 11px/15px var(--f-ui); color: var(--text-strong); }
 .panel-braun { border-width: 0; font-family: var(--f-ui); }
@@ -260,9 +257,8 @@
   color: var(--vfd-bright); font: 400 12px/14px var(--f-vfd); text-transform: lowercase; text-align: left;
   cursor: pointer; transition: background-color var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui);
 }
-.bn-dd.bn-dd-start { justify-content: flex-start; }
 .bn-dd .dd-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: var(--glow-vfd-glow); }
-.bn-dd .dd-chevron { display: flex; flex: none; filter: drop-shadow(var(--glow-vfd-glow)); }
+.bn-dd .dd-chevron { display: flex; flex: none; margin-left: auto; filter: drop-shadow(var(--glow-vfd-glow)); }
 @media (hover: hover) { .bn-dd:hover { background: var(--vfd-window-hover); } }
 .bn-dd:active, .bn-dropdown.is-open .bn-dd { box-shadow: inset 0 0 0 1px var(--vfd-field-edge), var(--fx-style-vfd-field); background: var(--vfd-window); }
 :root[data-input='keyboard'] .bn-dd:focus-visible { box-shadow: inset 0 0 0 1.5px var(--focus-field), var(--fx-style-vfd-field); }
@@ -422,17 +418,11 @@
 /* ---------------------------------------------------------------- output */
 .bn-output-row { display: flex; }
 
-/* ---------------------------------------------------------------- info module (230:640) */
+/* ---------------------------------------------------------------- info module (230:640; docking in shell.css) */
 .bn-info {
-  position: fixed; z-index: 10; top: var(--edge); left: calc(var(--edge) + var(--panel-w) + 20px); width: 340px;
-  max-height: calc(100dvh - 2 * var(--edge)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
   border-radius: var(--radius-case); background: var(--case-deck-panel); box-shadow: var(--fx-style-case-panel);
   font-family: var(--f-ui); color: var(--text-strong);
-  opacity: 0; transform: translateX(-8px);
-  transition: opacity var(--t-ui) var(--ease-ui), transform var(--t-ui) var(--ease-ui);
 }
-.bn-info.is-open { opacity: 1; transform: none; }
-@media (max-width: 759px) { .bn-info { left: var(--edge); z-index: 12; width: min(340px, calc(100vw - 2 * var(--edge))); } }
 .bn-info-head { display: flex; flex-direction: column; gap: 16px; padding: 20px 20px 12px; }
 .bn-info-title-row { display: flex; align-items: flex-end; justify-content: space-between; height: 40px; }
 .bn-info-title { margin: 0; font: 400 16px/21px var(--f-ui); color: var(--text-strong); }

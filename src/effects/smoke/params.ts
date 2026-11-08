@@ -7,7 +7,7 @@ import {
 
 export const SMOKE_SECTIONS: readonly SectionDef[] = [
   { id: 'plume', label: 'Plume' },
-  { id: 'look', label: 'Look' },
+  { id: 'render', label: 'Render' },
 ];
 
 const SOURCES_2 = { visibleWhen: { id: 'emitters', min: 2 } };
@@ -27,16 +27,16 @@ export const SMOKE_PARAMS = [
   num('turbulenceScale',    'Swirl',        'plume', 0.2,   4,      0.01,  0.58,   n10()),
   num('drag',               'Drag',         'plume', 0,     1,      0.01,  0.5,    n10()),
   num('emitters',           'Sources',      'plume', 1,     3,      1,     3),
-  toggle('blend',           'Blend mode',   'look',  BLEND_OPTIONS, 'multiply'),
-  num('density',            'Density',      'look',  0.005, 0.4,    0.001, 0.1,    n10()),
-  num('softness',           'Softness',     'look',  0,     1,      0.01,  0.5,    n10()),
-  num('haze',               'Haze',         'look',  0,     1,      0.01,  0.5,    n10()),
-  color('smokeColor1',      'Smoke colour 1', 'look', '#00BBFF'),
-  color('smokeColor2',      'Smoke colour 2', 'look', '#EC008C', SOURCES_2),
-  color('smokeColor3',      'Smoke colour 3', 'look', '#FFF200', SOURCES_3),
-  color('background',       'Background',   'look',  '#F7F7F5'),
-  num('contrast',           'Contrast',     'look',  0.5,   3,      0.01,  1.25,   { control: 'knob', display: N10 }),
-  num('grain',              'Grain',        'look',  0,     1,      0.01,  0.1,    n10()),
+  toggle('blend',           'Blend mode',   'render', BLEND_OPTIONS, 'multiply'),
+  num('density',            'Density',      'render', 0.005, 0.4,    0.001, 0.1,    n10()),
+  num('softness',           'Softness',     'render', 0,     1,      0.01,  0.5,    n10()),
+  num('haze',               'Haze',         'render', 0,     1,      0.01,  0.5,    n10()),
+  color('smokeColor1',      'Smoke colour 1', 'render', '#00BBFF'),
+  color('smokeColor2',      'Smoke colour 2', 'render', '#EC008C', SOURCES_2),
+  color('smokeColor3',      'Smoke colour 3', 'render', '#FFF200', SOURCES_3),
+  color('background',       'Background',   'render', '#F7F7F5'),
+  num('contrast',           'Contrast',     'render', 0.5,   3,      0.01,  1.25,   { control: 'knob', display: N10 }),
+  num('grain',              'Grain',        'render', 0,     1,      0.01,  0.1,    n10()),
 ] as const satisfies readonly ParamDef[];
 
 export type SmokeParams = AppParams & ValuesOf<typeof SMOKE_PARAMS>;

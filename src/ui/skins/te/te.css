@@ -8,6 +8,37 @@
 .title-row { display: flex; align-items: center; gap: 8px; height: 17px; }
 .panel-title { font: 500 var(--fs-title)/17px var(--f-mono); letter-spacing: var(--ls-title); color: var(--ink); }
 .panel-version { font: 400 var(--fs-key)/13px var(--f-mono); letter-spacing: var(--ls-label); color: var(--muted); }
+/* VZ-01 info key (M16, Figma TE 290:2 "Title row — info key states"): on hover, keyboard focus or
+   while the info module is open a recessed well grows right behind the name and the info icon
+   fades in (orange while open). The name never moves: the 6 px padding is taken back by the
+   negative margin, so it sits 8 px from the hide icon as before. */
+.te-model-h { display: flex; margin: 0; font: inherit; }
+.te-model {
+  position: relative; display: flex; align-items: center; gap: 4px; height: 17px; margin-left: -6px; padding: 0 6px;
+  border: 0; background: none; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.te-model-name { position: relative; }
+.te-model-well {
+  position: absolute; left: 0; top: -2.5px; width: calc(100% - 16px); height: 22px; border-radius: 4px; opacity: 0;
+  background: var(--info-well); box-shadow: var(--info-well-shadow);
+  transition: width var(--t-model) var(--ease-out), opacity var(--t-model) var(--ease-out), background-color var(--t-press) var(--ease-ui);
+}
+.te-model-icon { position: relative; display: block; width: 12px; height: 12px; opacity: 0; transition: opacity var(--t-model) var(--ease-out), color var(--t-ui) var(--ease-ui); }
+.te-model-icon svg { display: block; }
+.te-model.is-open .te-model-well, :root[data-input='keyboard'] .te-model:focus-visible .te-model-well { width: 100%; opacity: 1; }
+.te-model.is-open .te-model-icon, :root[data-input='keyboard'] .te-model:focus-visible .te-model-icon { opacity: 1; }
+.te-model.is-open .te-model-icon { color: var(--accent); }
+@media (hover: hover) {
+  .te-model:hover .te-model-well { width: 100%; opacity: 1; }
+  .te-model:hover .te-model-icon { opacity: 1; }
+}
+.te-model:active .te-model-well { width: 100%; opacity: 1; background: var(--info-well-pressed); }
+.te-model:active .te-model-icon { opacity: 1; }
+.te-model:focus-visible { outline: none; }
+:root[data-input='keyboard'] .te-model:focus-visible::after {
+  content: ''; position: absolute; left: -2px; right: -2px; top: -4.5px; bottom: -4.5px; pointer-events: none;
+  border: 1.5px solid var(--accent); border-radius: 6px;
+}
 .icon-btn {
   position: relative;
   display: inline-grid; place-items: center; flex: none; width: 16px; height: 24px; margin: -3.5px 0; padding: 0;
@@ -174,7 +205,7 @@ input.oled-field::placeholder { color: var(--oled-placeholder); text-transform: 
 input.oled-field:focus { outline: none; }
 
 /* ---------------------------------------------------------------- input */
-/* M15 (84:11369): SYSTEM [slide switch] MIC, the LISTEN key (latching, LED), hint below. */
+/* M15 (84:11369): SYSTEM [slide switch] MIC, the LISTEN key (latching, LED). No hint line (M16). */
 .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: center; min-width: 0; height: var(--key-h); }
 .te-switch { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .sw-legend {
@@ -204,11 +235,6 @@ input.oled-field:focus { outline: none; }
 .key-listen { width: 100%; }
 .key-listen[aria-pressed='true'] { color: var(--accent); }
 .key-listen .led { top: 5px; left: 5px; }
-.hint {
-  font: 400 var(--fs-label)/14px var(--f-mono); letter-spacing: var(--ls-key);
-  text-transform: uppercase; color: var(--muted);
-}
-.input-hint.is-live { color: var(--accent); }
 
 /* ---------------------------------------------------------------- presets */
 .preset-row { display: grid; grid-template-columns: 1fr 42px; gap: 6px; }
@@ -344,7 +370,7 @@ input.oled-field:focus { outline: none; }
 .key-row-toggle { grid-column: 2 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 
 /* Colour swatches */
-.swatch-row { display: flex; gap: 29px; padding: 0 14px; }
+.swatch-row { display: flex; gap: 29px; padding: 0 14px; margin-top: 8px; }   /* M16: 20 px below the dials */
 .swatch { display: flex; flex-direction: column; gap: 5px; width: 45.8px; flex: none; }
 .swatch-key {
   position: relative; display: block; height: 20px; border-radius: var(--key-r);
@@ -358,9 +384,39 @@ input.oled-field:focus { outline: none; }
 :root:not([data-input='pointer']) .swatch-key:has(input:focus-visible) { outline: 1.5px solid var(--accent); outline-offset: 2px; }
 .swatch-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; padding: 0; border: 0; cursor: pointer; }
 .swatch-label { font: 500 var(--fs-label)/11px var(--f-mono); letter-spacing: var(--ls-label); color: var(--muted); white-space: nowrap; }
-.swatch-hex { font: 400 var(--fs-key)/13px var(--f-mono); letter-spacing: var(--ls-chip); color: var(--ink); }
 
 /* Output */
 .output-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .output-row .key-wide { width: auto; }
 
+
+/* ---------------------------------------------------------------- info module (M16, Figma TE 290:6 / 290:148) */
+/* A TE panel card docked right of the panel (docking: shell.css .info-module): INFO + CLOSE,
+   an OLED window, About and Help as TE sections. Everything upper case, as the panel. */
+.te-info {
+  background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: var(--card-r);
+  box-shadow: var(--panel-shadow); color: var(--ink); font-family: var(--f-mono);
+}
+.te-info-head { display: flex; flex-direction: column; gap: 16px; padding: 14px var(--pad-x) 18px; }
+.te-info-title-row { display: flex; align-items: center; justify-content: space-between; }
+.te-info-title { margin: 0; }
+.te-info-close { padding: 0 8px; }
+.te-info-model { display: flex; flex-direction: column; gap: 2px; }
+.te-info-vz { font: 500 28px/34px var(--f-mono); letter-spacing: 0.04em; color: var(--oled-fg); }
+.te-info-tag { text-transform: uppercase; }
+.te-info-sec { display: flex; flex-direction: column; gap: 12px; padding: 16px var(--pad-x) 18px; }
+.te-info-sec .section-label { margin: 0; }
+.te-info-list { display: flex; flex-direction: column; gap: 6px; }
+.te-info-row { display: flex; gap: 12px; }
+.te-info-legend {
+  flex: none; width: 84px; font: 400 var(--fs-label)/15px var(--f-mono); letter-spacing: var(--ls-section);
+  text-transform: uppercase; color: var(--muted);
+}
+.te-info-value, .te-info-note {
+  flex: 1; min-width: 0; font: 400 var(--fs-key)/15px var(--f-mono); letter-spacing: var(--ls-key);
+  text-transform: uppercase; color: var(--ink); overflow-wrap: anywhere;
+}
+.te-info-note { margin: 0; line-height: 16px; }
+.te-info a { color: inherit; text-decoration: none; border-radius: 2px; }
+.te-info a:hover { color: var(--accent); }
+:root[data-input='keyboard'] .te-info a:focus-visible { outline: 1.5px solid var(--accent); outline-offset: 2px; }

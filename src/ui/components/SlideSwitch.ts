@@ -12,8 +12,9 @@ export interface SlideSwitchApi extends Component {
  * Two-position source slide switch (system | mic), shared by the skins; each skin styles it
  * (`cls`). It only selects: listening is the listen key's job.
  *
- * Input: click a legend or the far side of the body, drag the thumb (snaps to the nearer end),
- * arrow keys, Space / Enter flip. ARIA: a two-step slider whose value text names the source.
+ * Input (M16): click a legend to select its side; click anywhere on the body to toggle; drag the
+ * thumb (it follows the pointer, mouse or touch, and snaps to the nearer end on release); arrow
+ * keys, Space / Enter flip. ARIA: a two-step slider whose value text names the source.
  * The system end can be locked (dimmed, the thumb stays on mic).
  */
 export function createSlideSwitch(o: {
@@ -61,43 +62,42 @@ export function createSlideSwitch(o: {
     pick(to);
   });
 
-  // Drag the thumb; a click without movement flips to the side clicked.
-  let startX = 0;
-  let moved = false;
+  // Pointer (mouse, pen, touch): a press without travel toggles; a drag moves the thumb live
+  // and snaps to the nearer end on release. State is kept here, not read from pointer capture
+  // (capture can be refused or lost; then the drag still ends cleanly).
+  let drag: { id: number; x: number; from: number; t: number; moved: boolean } | null = null;
+  const travel = () => Math.max(1, body.clientWidth - thumb.offsetWidth);
   body.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
+    if (drag || (e.pointerType === 'mouse' && e.button !== 0)) return;
     e.preventDefault();
-    body.setPointerCapture(e.pointerId);
+    try { body.setPointerCapture(e.pointerId); } catch { /* still works within the body */ }
     body.focus({ preventScroll: true });
-    startX = e.clientX;
-    moved = false;
+    const from = kind === 'mic' ? 1 : 0;
+    drag = { id: e.pointerId, x: e.clientX, from, t: from, moved: false };
     el.classList.add('is-dragging');
   });
   body.addEventListener('pointermove', (e) => {
-    if (!body.hasPointerCapture(e.pointerId)) return;
-    const dx = e.clientX - startX;
-    if (Math.abs(dx) > 2) moved = true;
-    const travel = body.clientWidth - thumb.offsetWidth;
-    const from = kind === 'mic' ? 1 : 0;
-    const t = Math.min(1, Math.max(locked ? 1 : 0, from + dx / Math.max(1, travel)));
-    thumb.style.setProperty('--drag', String(t));
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x;
+    if (!drag.moved && Math.abs(dx) < 3) return;
+    drag.moved = true;
+    drag.t = Math.min(1, Math.max(locked ? 1 : 0, drag.from + dx / travel()));
+    thumb.style.setProperty('--drag', String(drag.t));
   });
   const end = (e: PointerEvent) => {
-    if (!body.hasPointerCapture(e.pointerId)) return;
-    body.releasePointerCapture(e.pointerId);
+    if (!drag || e.pointerId !== drag.id) return;
+    const g = drag;
+    drag = null;
+    if (body.hasPointerCapture(e.pointerId)) body.releasePointerCapture(e.pointerId);
     el.classList.remove('is-dragging');
     if (e.type === 'pointercancel') { paint(); return; }
-    if (moved) {
-      const t = Number(thumb.style.getPropertyValue('--drag') || (kind === 'mic' ? 1 : 0));
-      pick(t >= 0.5 ? 'mic' : 'system');
-    } else {
-      const r = body.getBoundingClientRect();
-      pick(e.clientX - r.left >= r.width / 2 ? 'mic' : 'system');
-    }
+    if (g.moved) pick(g.t >= 0.5 ? 'mic' : 'system');
+    else pick(kind === 'mic' ? 'system' : 'mic');
     paint();
   };
   body.addEventListener('pointerup', end);
   body.addEventListener('pointercancel', end);
+  body.addEventListener('lostpointercapture', (e) => end(new PointerEvent('pointerup', { pointerId: e.pointerId, clientX: e.clientX })));
 
   paint();
   return {

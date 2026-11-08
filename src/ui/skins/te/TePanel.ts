@@ -17,6 +17,8 @@ import { ICONS } from '../../icons';
 import type { Skin, SkinContext, SkinPanel } from '../types';
 import { createTeDisplay } from './TeDisplay';
 import { createTeInput } from './TeInput';
+import { buildTeInfo, teInfoKey } from './TeInfo';
+import { attachInfo } from '../../info';
 
 /** Rotaries (Sources 1..3) and selectors (Blend mode) as rows of LED keys. */
 function keyRow(def: NumberParamDef | ToggleParamDef, store: ParamStore, legend: string): Component {
@@ -117,8 +119,9 @@ const tePresetsLook: PresetsLook = {
 };
 
 /**
- * The TE panel (design 84:11263): title row, OLED, UI / Input / Visualization / Presets
- * groups, then the numbered parameter sections (from the abstract model) and Output.
+ * The TE panel (design 84:11263): title row (VZ-01 info key), OLED, Input / UI / Visualization /
+ * Presets groups, then the numbered parameter sections (from the abstract model) and Output;
+ * the info module (TeInfo.ts) docks right of it.
  */
 function createTePanel(ctx: SkinContext): SkinPanel {
   const { store, engine, presets, effects, prefs, listen, actions } = ctx;
@@ -128,8 +131,10 @@ function createTePanel(ctx: SkinContext): SkinPanel {
     type: 'button', class: 'icon-btn', 'aria-label': 'Hide panel', 'aria-controls': 'panel', 'aria-expanded': 'true',
     'data-tip': 'Hide panel (H)', onclick: () => actions.hide(),
   }, svg(ICONS.sidebar));
+  // VZ-01 is the info key (M16), as VZ1 is in Braun.
+  const model = teInfoKey();
   const titleRow = h('div', { class: 'title-row' },
-    hideBtn, h('h1', { class: 'panel-title' }, 'VZ-01'), h('span', { class: 'spacer' }),
+    hideBtn, h('h1', { class: 'te-model-h' }, model), h('span', { class: 'spacer' }),
     h('span', { class: 'panel-version' }, `V${ctx.version}`));
 
   const display = createTeDisplay(engine, listen);
@@ -157,7 +162,8 @@ function createTePanel(ctx: SkinContext): SkinPanel {
   const presetGroup = createPresetsSection(store, presets, actions.setEffect, (num, name) => display.setPreset(num, name), tePresetsLook);
   d.add(presetGroup.dispose);
 
-  const head = h('header', { class: 'panel-head' }, titleRow, display.el, uiGroup, input.el, visGroup, presetGroup.el);
+  // M16: Input first, then UI.
+  const head = h('header', { class: 'panel-head' }, titleRow, display.el, input.el, uiGroup, visGroup, presetGroup.el);
 
   const host = h('div', { class: 'param-sections' });
   let effectD = new Disposer();
@@ -189,9 +195,16 @@ function createTePanel(ctx: SkinContext): SkinPanel {
 
   const shell = createPanelShell('te', [head, host, output.el], hideBtn.firstElementChild!, actions.toggle);
   d.add(shell.dispose);
+
+  // Info module, docked right of the panel (shared behaviour: ui/info.ts).
+  const info = attachInfo({ panel: shell.el, trigger: model, build: (onClose) => buildTeInfo(ctx.version, onClose) });
+  d.add(info.dispose);
+
   return {
     el: shell.el, dispose: () => d.dispose(),
-    setOpen: shell.setOpen, hideButton: hideBtn, showKey: shell.showKey, openRight: shell.openRight,
+    setOpen: (open, instant) => { if (!open) info.setOpen(false); shell.setOpen(open, instant); },
+    hideButton: hideBtn, showKey: shell.showKey, openRight: shell.openRight,
+    escape: info.escape,
   };
 }
 

@@ -14,7 +14,8 @@ import type { ParamStore } from '../../../app/store';
 import type { Skin, SkinContext, SkinPanel } from '../types';
 import { actionKey, dial, fader, header, INFO_ICON, listenKey, rotary, selectorGroup, swatch, toggleRow, vfdDropdownLook } from './controls';
 import { createVfd } from './Vfd';
-import { createInfoModule } from './InfoModule';
+import { buildBraunInfo } from './InfoModule';
+import { attachInfo } from '../../info';
 
 const FONTS = 'https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500&family=Share+Tech+Mono&display=swap';
 
@@ -118,7 +119,7 @@ function createBraunPanel(ctx: SkinContext): SkinPanel {
     'data-tip': 'Hide panel (H)', onclick: () => actions.hide(),
   }, svg(ICONS.sidebar));
   const model = h('button', {
-    type: 'button', class: 'bn-model', 'aria-label': 'About VZ1', 'aria-controls': 'info-module', 'aria-expanded': 'false',
+    type: 'button', class: 'bn-model', 'aria-label': 'About VZ1',
   }, h('span', { class: 'bn-model-well', 'aria-hidden': 'true' }), h('span', { class: 'bn-model-name' }, 'VZ1'),
   h('span', { class: 'bn-model-icon', 'aria-hidden': 'true' }, svg(INFO_ICON)));
   const vfd = createVfd(engine, listen);
@@ -139,7 +140,7 @@ function createBraunPanel(ctx: SkinContext): SkinPanel {
     listenBtn));
 
   // ---- ui: skin dropdown + lt / drk
-  const skinDd = createDropdown('UI theme', (id) => crossFade(() => prefs.set({ theme: id })), 'bn-dropdown dd-theme', vfdDropdownLook({ start: true }));
+  const skinDd = createDropdown('UI theme', (id) => crossFade(() => prefs.set({ theme: id })), 'bn-dropdown dd-theme', vfdDropdownLook());
   skinDd.setItems(THEMES.map((t) => ({ value: t.id, label: t.label.toLowerCase() })), prefs.get().theme);
   d.add(skinDd.dispose);
   const modeKeys = selectorGroup<ThemeMode>(
@@ -182,28 +183,18 @@ function createBraunPanel(ctx: SkinContext): SkinPanel {
   const shell = createPanelShell('braun', [head, input, ui, visSec, presetSec.el, host, output], hideBtn.firstElementChild!, actions.toggle);
   d.add(shell.dispose);
 
-  // ---- info module, docked right of the panel
-  const info = createInfoModule(ctx.version, () => setInfo(false, true));
-  document.querySelector('.shell')?.append(info.el);
-  const setInfo = (open: boolean, focus = false) => {
-    info.setOpen(open, focus);
-    model.setAttribute('aria-expanded', String(open));
-    model.classList.toggle('is-open', open);
-    if (!open && focus) model.focus({ preventScroll: true });
-  };
-  model.addEventListener('click', () => setInfo(!info.open, true));
-  d.add(() => info.dispose());
-  // Mounted after the shell exists (first render): attach when the panel is placed.
-  requestAnimationFrame(() => { if (!info.el.isConnected) shell.el.after(info.el); });
+  // ---- info module, docked right of the panel (shared behaviour: ui/info.ts)
+  const info = attachInfo({ panel: shell.el, trigger: model, build: (onClose) => buildBraunInfo(ctx.version, onClose) });
+  d.add(info.dispose);
 
   return {
     el: shell.el,
     dispose: () => d.dispose(),
-    setOpen: (open, instant) => { if (!open) setInfo(false); shell.setOpen(open, instant); },
+    setOpen: (open, instant) => { if (!open) info.setOpen(false); shell.setOpen(open, instant); },
     hideButton: hideBtn,
     showKey: shell.showKey,
     openRight: shell.openRight,
-    escape: () => { if (!info.open) return false; setInfo(false, true); return true; },
+    escape: info.escape,
   };
 }
 

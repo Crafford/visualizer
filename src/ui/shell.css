@@ -209,3 +209,16 @@ h1, h2, p { margin: 0; font-weight: inherit; font-size: inherit; }
 
 /* Theme switch: a short cross-fade of the whole page (View Transitions, main.ts). */
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--t-ui); animation-timing-function: var(--ease-ui); }
+
+/* ---------------------------------------------------------------- info module (M15 Braun, M16 shared) */
+/* Docked 20 px right of the panel, as tall as its content (scrolls within the window); over the
+   panel below 760 px. Skins style the card; ui/info.ts drives .is-open and [hidden]. */
+.info-module {
+  position: fixed; z-index: 10; top: var(--edge); left: calc(var(--edge) + var(--panel-w) + 20px); width: 340px;
+  max-height: calc(100dvh - 2 * var(--edge)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
+  opacity: 0; transform: translateX(-8px);
+  transition: opacity var(--t-ui) var(--ease-ui), transform var(--t-ui) var(--ease-ui);
+}
+.info-module::-webkit-scrollbar { display: none; }
+.info-module.is-open { opacity: 1; transform: none; }
+@media (max-width: 759px) { .info-module { left: var(--edge); z-index: 12; width: min(340px, calc(100vw - 2 * var(--edge))); } }
