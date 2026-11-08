@@ -6,8 +6,9 @@ Static site, no backend. TypeScript + Vite + three.js (WebGL2) + Web Audio. No U
 
 ```
 src/
-  main.ts                 composition root: store, engine, UI prefs, panel, floating keys, transport, stage,
-                          shortcuts, input modality (focus rings), canvas follows the UI mode
+  main.ts                 composition root: store, engine, listen controller, UI prefs, skin host (mounts
+                          the active skin's panel, re-mounts on a skin switch), floating keys, LIVE strip,
+                          stage, shortcuts (H, Space, Escape), input modality (focus rings), canvas mode
   app/
     canvasMode.ts         UI mode -> canvas: CIELAB lightness mirror of the background, Blend mode per mode
     params.ts             ParamDef schema + helpers (num/color/toggle, n10), APP_PARAMS (audio response),
@@ -17,8 +18,9 @@ src/
     loop.ts               rAF loop, fixed-timestep accumulator (60 Hz step, per-frame render)
     stage.ts              canvas + WebGLRenderer, ResizeObserver, DPR cap, active Effect, screenshot
   audio/
-    types.ts              AudioFrame, SourceKind/SourcePayloads, AudioResponse, TransportState
-    AudioEngine.ts        AudioContext, sources, play/pause/seek, getFrame(), events, getSpectrum() (UI meters)
+    types.ts              AudioFrame, SourceKind ('system' | 'mic'), ListenState, AudioResponse,
+                          AudioSourceError + SourceErrorCode / SOURCE_ERRORS
+    AudioEngine.ts        AudioContext, listen(kind) / stop(), getFrame(), events, getSpectrum() (UI meters)
     analysis.ts           FeatureExtractor: bands, rise/fall smoothing, beat detection
   effects/
     types.ts              Effect contract, EffectEntry
@@ -31,20 +33,28 @@ src/
     smoke/                smoke effect: params.ts (SMOKE_PARAMS, legacy `mode` preset migration), SmokeEffect
                           (TUNE, audio mapping, splat), SmokeTrails (trail, Multiply/Screen composite), shaders/
   ui/
-    tokens.css            theme-independent tokens (Geist Mono type scale, geometry, motion)
-    themes/te.css         TE light / dark tokens (colours, key bevels, OLED, dial, plate shadows)
-    themes.ts             theme registry, per-viewer UI prefs (theme, LT/DRK, panel open) in localStorage
-    app.css               component styles (reads tokens only)
-    dom.ts                h(), Component, Disposer
-    controlStyle.ts       per-param dial legend (COUNT, EMIT...), cap colour, dial order
-    Panel.ts              floating panel: header groups + numbered param sections + Output; overlay
-                          scroll thumb and edge fades
-    Display.ts            header OLED: effect tag, preset, source, spectrum, LVL, BPM, time
-    Spectrum.ts           the OLED spectrum row (52 bars), shared by Display and the live transport
-    InputSection.ts       CAP / LNK / UPL / MIC keys and their panes
-    PresetsSection.ts     preset dropdown, RST, SAVE (naming) / DEL / EXP / IMP
-    Transport.ts          floating transport: file/link (play key + seek bar) or live (LIVE + spectrum)
-    components/           Key (+ radio key group), Dropdown, Dial, Swatch, Tooltip
+    tokens.css            skin-independent tokens (TE type scale, geometry, motion, --edge)
+    shell.css / shell.ts  the shared panel card (scroll, overlay thumb, edge fades, minimise morph via
+                          PanelMorph.ts), floating keys, LIVE strip, tooltip, spectrum bars; crossFade()
+    themes.ts             THEMES (skin ids + dropdown labels), per-viewer prefs (skin, panel open; LT / DRK
+                          per visit from the system scheme) in localStorage; <html data-theme data-skin>
+    listen.ts             ListenController: the input model shared by every skin (switch + listen key)
+    model.ts              the abstract panel model: sections and control kinds, paramSections(entry)
+    PresetsSection.ts     preset behaviour (dropdown, reset, save naming, delete, export / import); each
+                          skin passes a PresetsLook (keys, field, rows, status, messages)
+    LiveStrip.ts          LIVE + spectrum plate while listening with the panel hidden
+    Spectrum.ts           52 log-spaced spectrum bars (TE OLED and the LIVE strip)
+    dom.ts, icons.ts, controlStyle.ts (short legends, TE cap colours, dial order)
+    components/           Key (+ radio key group), Dropdown (skinnable via DropdownLook), Dial, Swatch,
+                          SlideSwitch (system / mic, shared), Tooltip
+    skins/
+      types.ts            Skin, SkinContext, SkinPanel, PanelActions
+      index.ts            SKINS registry: te (default), braun
+      te/                 te-tokens.css, te.css, TePanel.ts, TeDisplay.ts (OLED), TeInput.ts
+      braun/              braun-tokens.css (generated 1:1 from the Figma variables + effect styles),
+                          braun.css, BraunPanel.ts, controls.ts (faders, dials, A1 rotary, keys, swatch,
+                          VFD dropdown look), Vfd.ts (display, seven-segment BPM, clip meter),
+                          InfoModule.ts
   presets/
     types.ts              Preset, PresetStorage, PresetFile, PRESET_SCHEMA
     store.ts              PresetBank: built-in Default per effect (from the schema), user presets in
@@ -339,31 +349,42 @@ high -> curl frequency x (1 + high), ink x (1 + 0.5 high); beat -> puff, kick, s
 
 ## Audio
 
-`setSource(kind, payload)` is typed per kind via `SourcePayloads`; `stop()` returns to idle.
-Switching source tears the previous one down (stop tracks, disconnect nodes, revoke object
-URLs). The AudioContext and a single AnalyserNode (fftSize 2048, smoothingTimeConstant 0)
-are created lazily on the first `setSource()` (a user gesture) and resumed on every play/start.
+Sources (M15): system audio and the microphone only. Link, upload, drag-and-drop and the file
+player (play / pause, seek, time) are gone, with their engine paths.
 
-| Source  | Input                                                        | Audible            | Transport          |
-|---------|--------------------------------------------------------------|--------------------|--------------------|
-| file    | `<audio>` (or `<video>` for video/* so MP4 uses its audio), loops | yes, to destination | play/pause, seek |
-| url     | `<audio crossOrigin="anonymous">`, loops                     | yes                | play/pause, seek   |
-| mic     | `getUserMedia` with AEC/NS/AGC off -> MediaStreamSource      | no (feedback)      | "Live"             |
-| capture | `getDisplayMedia({video, audio})`, video tracks stopped      | no (tab already plays) | "Live"         |
+`listen(kind)` starts a source and replaces the current one (handover); `stop()` returns to
+idle and also cancels a pending start (a generation counter makes an older prompt resolve
+without effect). The AudioContext and a single AnalyserNode (fftSize 2048,
+smoothingTimeConstant 0) are created lazily on the first `listen()` (a user gesture). Both
+sources feed the analyser only, never the destination.
 
-File and link elements have `loop = true` (M11), so the visual never stops at the end. Labels:
-the file name; for a link `host/file` (e.g. `cdn.example.com/track.mp3`); for capture, what is
-shared, named from the video track before it is stopped (`describeCapture`): displaySurface
-`monitor` -> ENTIRE SCREEN, `window` -> the window title when the track label carries one
-(else APP WINDOW), `browser` -> the tab title when the label carries one (else CHROME TAB).
-Chrome labels tracks with ids (`web-contents-media-stream://...`, `window:...`, `screen:...`),
-which are ignored.
+| Source | Input | Label |
+|--------|-------|-------|
+| system | `getDisplayMedia({ video: { displaySurface: 'monitor', width 160, height 90, frameRate 1 }, audio: true, systemAudio: 'include', monitorTypeSurfaces: 'include', selfBrowserSurface: 'exclude', surfaceSwitching: 'include' })`; video tracks stopped at once | `describeSurface(videoTrack)`: monitor -> entire screen, window -> its title (else app window), browser -> the tab title (else chrome tab); Chrome's id labels are ignored |
+| mic | `getUserMedia` with AEC / NS / AGC off | the device label |
 
-Failure handling: a link that fails to load (no CORS headers, 404, not audio) reports via the
-element `error` event; a link that plays pure digital zeros for 2 s (tainted element) reports
-"This host blocks cross-origin audio. Try the Capture tab." Streaming hosts (Spotify, YouTube...)
-are rejected up front. Capture with no audio track, or outside Chromium desktop, gets its own
-message; the audio track's `ended` event (user clicked "Stop sharing", mic unplugged) returns to idle.
+`displaySurface: 'monitor'` pre-selects Chrome's Entire Screen pane, where "Share system audio"
+lives. Failures are `AudioSourceError(code)`: `cancelled` (dialog dismissed), `noAudio` (a
+share without an audio track), `systemUnsupported`, `micDenied`, `micMissing`,
+`micUnsupported`; `SOURCE_ERRORS` holds the default (lower-case) wording and skins set the
+case. `AudioEngine.systemSupported` feature-detects getDisplayMedia and treats Safari, Firefox
+and touch-only devices as unsupported. The audio track's `ended` event ("Stop sharing", mic
+unplugged) returns to idle.
+
+### Input model (ui/listen.ts)
+
+Shared by every skin: a two-position source switch (system / mic, default system where
+supported, remembered per browser in `visualizer.source.v1`) and a latching listen key.
+
+- The switch only selects. Listen (and Space, when focus is not in a control) starts / stops
+  the selected source.
+- Flipping the switch while listening hands over to the other source.
+- Cancelling the share dialog stops listening (LED off), no error. A share without audio stops
+  listening and shows `noAudio` in the display.
+- Unsupported: the switch is locked to mic and the system end dimmed; the display / hint says
+  "system audio needs chrome or edge on a computer".
+
+`ListenView`: `{ selected, systemSupported, latched, source, label, error }`.
 
 ```ts
 interface AudioFrame {
@@ -373,9 +394,8 @@ interface AudioFrame {
   beat: boolean;                             // true for exactly one frame per onset
   beatStrength: number;                      // set on the beat frame, decays (tau 250 ms)
   raw: { bass: number; mid: number; high: number };  // before rise/fall smoothing
-  playing: boolean;
-  time: number;                              // media time, or seconds since live start
-  duration: number;                          // media duration, 0 for live/unknown
+  playing: boolean;                          // listening
+  time: number;                              // seconds since listening started
 }
 ```
 
@@ -395,24 +415,90 @@ interface AudioFrame {
    region energy is rising (rejects note-offs), and 120 ms have passed since the last beat.
    `engine.bpm` is a rolling median-interval tempo estimate (0 when unknown).
 
-When nothing is playing the bands, level and beatStrength decay to 0 with the fall constant.
+When nothing is listening the bands, level and beatStrength decay to 0 with the fall constant.
 Add `?debug` to the URL to expose `engine`, `store` and `stage` on `window` in production builds.
 
 ## UI
 
-Design source: Figma "Viz", page TE (84:9754), the Teenage Engineering panel in light
-(84:11263) and dark (84:15590), its state frames (84:11937 presets, 84:11990 input and
-level, 84:12396 components) and the floating controls (84:18473 / 84:18642). Effects and
-rendering are untouched by the UI: it only reads and writes the store and the engine.
+Design source: Figma "Viz" (4r1GeX617Dw5sO6bGEsAgM). TE skin: page TE (84:9754), the panel in
+light (84:11263) and dark (137:6), its state frames (84:11937 presets, 84:11990 input and
+level, 84:12396 components, 141:3 focus) and the floating controls (84:18411). Braun skin:
+page Braun (168:2), library page "Braun — Components" (250:2). Effects and rendering are
+untouched by the UI: it only reads and writes the store, the engine and the listen controller.
+
+### Skins (M15)
+
+A skin decides structure, not just colours. `skins/index.ts` registers them; each provides
+tokens CSS (light / dark), its component CSS, fonts (`loadFonts`, optional) and
+`createPanel(ctx: SkinContext): SkinPanel`. The context holds the store, engine, presets,
+effects, prefs, the listen controller and the panel actions; the panel returns its element,
+`setOpen`, the hide button / show key (focus targets), `openRight` (for the LIVE strip) and an
+optional `escape()` (close an overlay). Skins render; they own no app state.
+
+The abstract panel model (`model.ts`): sections input, ui, visualization, presets, the
+effect's sections (from the param schema), audio response, output; control kinds source
+switch, listen key, selector key group (hardware: holds a state, latching, LED), action key
+(software: a momentary command), dropdown, value, rotary (discrete choices), swatch, display,
+LIVE strip, floating plates, info key. Selector vs action is chosen by function in every
+skin. `paramSections(entry)` turns the schema into numbered sections of `value`, `rotary`,
+`selector` and `swatch` controls with their legends; each skin maps them:
+
+| Kind | TE | Braun |
+|------|----|-------|
+| value | dial (grid of 3 or 4) | tall fader in section 1 (particles / plume), short fader in audio response, Atelier dial elsewhere |
+| rotary | radio keys, LED outside | A1 rotary selector |
+| selector | LED keys | capsule selector keys |
+| swatch | swatch key + hex | capsule well |
+
+Switching skin (UI theme dropdown, "TEENAGE ENG." / "braun" in each skin's case): main.ts
+disposes the panel and mounts the new skin's panel in place. Values, LT / DRK, the panel open
+state, the preset selection (module-level in PresetsSection.ts) and the listening source are
+app state and survive; the skin persists in prefs (`theme`). index.html applies the stored
+skin before the first paint (`data-theme="<skin>-<mode>"`, `data-skin`) and starts the
+Braun fonts early when it is stored; otherwise they load on the first switch.
+
+Shared by every skin (shell.ts / shell.css / main.ts): the card and its scroll, the minimise
+morph into the show key (the plate's look comes from the skin's `--float-key-*` tokens), 20 px
+edges, keyboard-only focus rings (`data-input`), ~180 ms transitions and reduced motion, wake
+lock in fullscreen, canvas mirroring + blend mode on LT / DRK, LIVE strip rules, tooltips, H,
+Space (listen), Escape (skin overlay).
+
+### Braun skin
+
+Tokens: `braun-tokens.css` is generated 1:1 from the Figma "skin" variable collection (modes
+light / dark; `case/deck panel` -> `--case-deck-panel`) and its effect styles
+(`--fx-style-<name>`, colours bound to the `fx/*` variables) plus glows (`--glow-*`). Unbound
+design values (knob, key-face and dome gradient stops) are written in braun.css as in the
+components. Fonts: Host Grotesk 400 (500 for VZ1) and Share Tech Mono (the VFD), Google Fonts
+with preconnect and `display=swap`, loaded only when the skin is used.
+
+Panel (Panel 258:2624): 3 px case, deck at 90% (light) / 85% (dark), case shadow; header with
+the hide-panel icon key and the VZ1 model name (the info key: on hover / focus / open a
+recessed well grows to the left, the name slides left, the info icon fades in, 200 ms
+ease-out); the VFD (source LEDs, ink chip + preset, BPM in slanted seven-segment SVG digits
+with ghost 8s and glow, status line and surface / device, a 12-segment clip meter from the
+level); input (slide switch + green power listen key with LED); ui (VFD dropdown + lt / drk
+selector keys); visualization; presets (VFD dropdown, round action keys reset / save / delete /
+import / export, LED list, naming field with a green caret, saved window); the effect sections
+and audio response (see the table); output (record clip disabled, screenshot, left aligned).
+Faders and dials: role="slider" with value text, track drag (faders) or vertical drag (dials),
+arrows (0.1, Shift x10), Page / Home / End, double-click resets, touch, no wheel. The A1
+selector turns its pointer to the detents (31 / 76 / 120 degrees), click a number or step with
+a click on the knob, drag around it, arrows.
+
+Info module (230:640): a second case docked 20 px right of the panel (over it below 760 px
+wide): VFD window with VZ1 and the version (package.json), about (maker, jaco.studio, x
+placeholder, licence with the source link), the note, help. The VZ1 key toggles it; the close
+key and Escape close it (focus returns to VZ1); hiding the panel closes it. TE has none.
 
 Layout (`main.ts`, all CSS): the stage is `position: fixed; inset: 0`, so the canvas always
 fills the window and the panel never resizes it (the ResizeObserver still sizes the
 renderer). Over it float:
-- the panel: 340 px card, 24 px from the top-left, `max-height: 100dvh - 48px`; its content
+- the panel: 340 px card, 20 px (--edge) from the top-left, `max-height: 100dvh - 40px`; its content
   scrolls inside it (`.panel-scroll`, see Scrolling);
-- top-left: the show-panel key (side-panel icon, LED), visible only while the panel is
-  hidden; top-right: the fullscreen key (LED lit in fullscreen, icon flips to exit);
-- bottom-centre: the transport plate (see Transport). It is centred in the window, or in the
+- top-left: the show-panel key (the minimised panel), visible only while the panel is
+  hidden; top-right: the fullscreen key (icon flips to exit);
+- bottom-centre: the LIVE strip (see LIVE strip). It is centred in the window, or in the
   space right of the open panel when centring would overlap it.
 
 Show / hide: the side-panel icon left of the "VZ-01" title, the floating key, or H (ignored
@@ -420,10 +506,9 @@ while typing in a text field, or with modifiers). 180 ms fade + 12 px slide (0 m
 `prefers-reduced-motion`); the hidden panel is `inert`. Focus moves to the key that brings
 it back. Fullscreen targets `document.documentElement`, so the panel stays toggleable.
 
-Themes (`themes.ts`, `themes/te.css`): `<html data-theme="<theme>-<light|dark>">`. Every
-colour, gradient and shadow is a token from the design; components read tokens only. The
-UI row in the header is a theme dropdown (TEENAGE ENGINEERING is the only entry; a theme is
-one CSS file with the same tokens plus one `THEMES` entry) and LT / DRK keys. This is UI
+Skins and modes (`themes.ts`, `skins/*/…-tokens.css`): `<html data-theme="<skin>-<light|dark>"
+data-skin="<skin>">`. Every colour, gradient and shadow is a token from the design; components
+read tokens only. The UI row in the header is the skin dropdown and LT / DRK keys. This is UI
 chrome only, the visualizer's own colours are params. Theme, brightness and panel open
 state persist per viewer in `localStorage['visualizer.ui.v1']` (guarded; defaults on
 failure), applied before the first render.
@@ -471,21 +556,19 @@ OKLab L because L*'s linear toe keeps mirrored darks distinguishable (OKLab send
 #000000 and drifts on the way back). A page opened in DRK applies it once at start. Changing a
 colour or the blend by hand never changes the UI mode; presets loaded later keep their colours.
 
-Panel, top to bottom:
+TE panel, top to bottom:
 - Title row: side-panel icon, VZ-01, version.
-- OLED (`Display.ts`): effect tag (INK / SMOKE), preset (P01 DEFAULT), source title (NO FILE,
-  FILE UPLOAD PLAYING / PAUSED, LINK PLAYING / PAUSED, MIC, SYSTEM AUDIO) and hint (file name,
-  link host/file, device, what is captured: CHROME TAB, a window title, ENTIRE SCREEN;
-  uppercase, ellipsis), a 52-bar spectrum (`Spectrum.ts`)
-  (log-spaced 40 Hz..14 kHz from `engine.getSpectrum()`, a blue marker bar every 11th, orange
-  above 86% = peaking; a faint idle comb when nothing plays), the LVL meter (16 segments,
-  top 3 hot, a peak-hold segment), the tempo estimate + BPM and the elapsed time in green.
-  Updated from the engine's per-frame `level` event; no extra rAF loop.
-- UI: theme dropdown + LT / DRK.
-- Input: CAP / LNK / UPL / MIC radio keys with LEDs, then the source's pane: Start/Stop
-  capture or microphone (status inline in orange while on, hint below while off), OLED link
-  field + LOAD, CHOOSE FILE + file name. Errors go to a status line. A file dropped anywhere
-  loads and selects UPL; a source started elsewhere selects its key.
+- OLED (`skins/te/TeDisplay.ts`, M15 84:11269): effect tag (INK / SMOKE), preset (P01
+  DEFAULT); the main row: source title (SYSTEM AUDIO / MIC) over its state (LISTENING in orange
+  · the surface or device; an error in orange; empty while idle) and the big BPM (--- until a
+  tempo); a 52-bar spectrum (`Spectrum.ts`) (log-spaced 40 Hz..14 kHz, a blue marker bar every
+  11th, orange above 86% = peaking; a faint idle comb when idle) and the LVL meter (16
+  segments, top 3 hot, a peak-hold segment). No track time. Updated from the engine's
+  per-frame `level` event; no extra rAF loop.
+- UI: skin dropdown + LT / DRK.
+- Input (`TeInput.ts`, 84:11369): SYSTEM [slide switch] MIC, the LISTEN key (LED, orange
+  legend while latched), and a hint: what to do for the selected source while idle,
+  "LISTENING · <surface / device>" in orange while live, the unsupported or error reason.
 - Visualization: INK / SMOKE dropdown (replaces the header segmented control).
 - Presets (see Presets).
 - Parameter sections, numbered across the active effect's sections and Audio response
@@ -515,20 +598,15 @@ Components:
 - Swatch, Tooltip (one OLED bubble for every `[data-tip]`, on hover after 450 ms and on
   keyboard focus; the text is also `aria-description`).
 
-Transport (`Transport.ts`, M11), by source family:
-- File and link: shown whenever loaded, panel open or hidden. Play / pause key (primary) and
-  the OLED strip: elapsed, 36 cells (played cells lit, the playhead cell orange and taller;
-  click or drag to seek, arrow keys +-5 s, Home / End; `role="slider"`), total. The media loops.
-- Mic and capture: shown only while the panel is hidden (the panel's OLED shows the same).
-  No key (a page cannot pause the captured app): just the OLED strip, framed by the plate's
-  6 px on every side, with LIVE (orange) and the OLED's spectrum bars (blue markers, orange
-  peaks), live.
-- Nothing loaded: hidden (an empty transport over the art read as clutter; the OLED says NO FILE).
-Placement: centred in the window when that keeps 16 px clear of the open panel, else centred in
-the space right of it (max-width = that space; the strip shrinks). It fades in place and only
-slides (left, 180 ms) on panel toggles while visible. No volume control.
+LIVE strip (`LiveStrip.ts`): shown only while listening with the panel hidden (the panel's
+display shows the same): the plate around a display strip with LIVE and the spectrum bars.
+There is no transport (M15: no file player; a page cannot pause another app). Placement:
+centred in the window when that keeps 16 px clear of the open panel, else centred in the space
+right of it. It fades in place and only slides (left, 180 ms) on panel toggles while visible.
+TE: orange LIVE, OLED bars; Braun: a smoked VFD window, "live" and green VFD bars.
 
-Keyboard: Space plays / pauses unless focus is in a control; H toggles the panel.
+Keyboard: H toggles the panel; Space toggles listening unless focus is in a control; Escape
+closes the info module (Braun).
 
 ## Presets
 
@@ -559,7 +637,7 @@ on Ink with Default.
 Screenshot: the next rendered frame is read with `canvas.toBlob` in the same task as the
 draw (no preserveDrawingBuffer), at the drawing-buffer size (CSS size x dpr, dpr capped at
 2), composited on the paper colour; saved as `<effect>-YYYYMMDD-HHMMSS.png` (local time).
-Fullscreen targets the whole document, so the panel, floating keys and transport stay (the
+Fullscreen targets the whole document, so the panel, floating keys and LIVE strip stay (the
 panel can still be hidden with H); the ResizeObserver reallocates the trail targets (cleared).
 
 ## Milestones
@@ -572,4 +650,8 @@ M10 TE UI: full-window canvas, floating panel / keys / transport, light and dark
 dials, OLED display. M11 UI refinements: +1 px type, warm dark deck, keyboard-only focus rings,
 static dials, eased transitions, overlay scroll bar with edge fades, canvas follows LT / DRK
 (lightness mirror + Blend mode), Ink Screen composite, Smoke Mode -> Blend mode, looping media,
-per-family transport, SYSTEM AUDIO labels. Next: performance tiers, mobile sheet, REC CLIP.
+per-family transport, SYSTEM AUDIO labels. M12-M14 TE refinements (dark deck, focus states,
+minimise morph, wake lock, panel opacity, LT / DRK per visit). M15 input model (system audio /
+mic + listen; file, link and the transport removed), skin system (registry, abstract panel
+model, runtime switching), Braun skin from Figma variables, info module.
+Next: performance tiers, mobile sheet, REC CLIP.

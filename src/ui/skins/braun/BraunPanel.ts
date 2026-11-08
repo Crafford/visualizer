@@ -14,6 +14,7 @@ import type { ParamStore } from '../../../app/store';
 import type { Skin, SkinContext, SkinPanel } from '../types';
 import { actionKey, dial, fader, header, INFO_ICON, listenKey, rotary, selectorGroup, swatch, toggleRow, vfdDropdownLook } from './controls';
 import { createVfd } from './Vfd';
+import { createInfoModule } from './InfoModule';
 
 const FONTS = 'https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500&family=Share+Tech+Mono&display=swap';
 
@@ -181,16 +182,28 @@ function createBraunPanel(ctx: SkinContext): SkinPanel {
   const shell = createPanelShell('braun', [head, input, ui, visSec, presetSec.el, host, output], hideBtn.firstElementChild!, actions.toggle);
   d.add(shell.dispose);
 
-  // The VZ1 info key opens the info module (M15d).
-  model.disabled = true;
+  // ---- info module, docked right of the panel
+  const info = createInfoModule(ctx.version, () => setInfo(false, true));
+  document.querySelector('.shell')?.append(info.el);
+  const setInfo = (open: boolean, focus = false) => {
+    info.setOpen(open, focus);
+    model.setAttribute('aria-expanded', String(open));
+    model.classList.toggle('is-open', open);
+    if (!open && focus) model.focus({ preventScroll: true });
+  };
+  model.addEventListener('click', () => setInfo(!info.open, true));
+  d.add(() => info.dispose());
+  // Mounted after the shell exists (first render): attach when the panel is placed.
+  requestAnimationFrame(() => { if (!info.el.isConnected) shell.el.after(info.el); });
 
   return {
     el: shell.el,
     dispose: () => d.dispose(),
-    setOpen: shell.setOpen,
+    setOpen: (open, instant) => { if (!open) setInfo(false); shell.setOpen(open, instant); },
     hideButton: hideBtn,
     showKey: shell.showKey,
     openRight: shell.openRight,
+    escape: () => { if (!info.open) return false; setInfo(false, true); return true; },
   };
 }
 

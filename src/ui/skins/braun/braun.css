@@ -49,7 +49,7 @@
 .panel-braun { border-width: 0; font-family: var(--f-ui); }
 :where(.panel-braun) button { font-family: inherit; }
 /* Rings are drawn per control (1 px, focus/ring); the generic outline is off inside the panel. */
-.panel-braun :focus-visible { outline: none; }
+.panel-braun :focus-visible, .bn-info :focus-visible { outline: none; }
 
 /* ---------------------------------------------------------------- shared type */
 .bn-label { display: block; font: 400 9px/12px var(--f-ui); color: var(--text-key); white-space: nowrap; transition: color var(--t-ui) var(--ease-ui), opacity var(--t-ui) var(--ease-ui); }
@@ -421,6 +421,39 @@
 
 /* ---------------------------------------------------------------- output */
 .bn-output-row { display: flex; }
+
+/* ---------------------------------------------------------------- info module (230:640) */
+.bn-info {
+  position: fixed; z-index: 10; top: var(--edge); left: calc(var(--edge) + var(--panel-w) + 20px); width: 340px;
+  max-height: calc(100dvh - 2 * var(--edge)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
+  border-radius: var(--radius-case); background: var(--case-deck-panel); box-shadow: var(--fx-style-case-panel);
+  font-family: var(--f-ui); color: var(--text-strong);
+  opacity: 0; transform: translateX(-8px);
+  transition: opacity var(--t-ui) var(--ease-ui), transform var(--t-ui) var(--ease-ui);
+}
+.bn-info.is-open { opacity: 1; transform: none; }
+@media (max-width: 759px) { .bn-info { left: var(--edge); z-index: 12; width: min(340px, calc(100vw - 2 * var(--edge))); } }
+.bn-info-head { display: flex; flex-direction: column; gap: 16px; padding: 20px 20px 12px; }
+.bn-info-title-row { display: flex; align-items: flex-end; justify-content: space-between; height: 40px; }
+.bn-info-title { margin: 0; font: 400 16px/21px var(--f-ui); color: var(--text-strong); }
+.bn-info .bn-action { width: 24px; }
+.bn-info-vfd {
+  display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: var(--radius-window);
+  background: var(--vfd-window); box-shadow: var(--fx-style-vfd-window); font-family: var(--f-vfd);
+}
+.bn-info-model { display: flex; align-items: flex-end; gap: 8px; height: 18px; }
+.bn-info-vz { font: 400 16px/18px var(--f-vfd); color: var(--vfd-bright); text-shadow: var(--glow-vfd-glow); }
+.bn-info-ver, .bn-info-tag { font: 400 11px/12px var(--f-vfd); color: var(--vfd-dim); }
+.bn-info-sec { display: flex; flex-direction: column; gap: 12px; padding: 12px 20px; }
+.bn-info-help { padding-bottom: 20px; }
+.bn-info-list { display: flex; flex-direction: column; gap: 6px; }
+.bn-info-row { display: flex; gap: 12px; }
+.bn-info-legend { flex: none; width: 64px; font: 400 9px/15px var(--f-ui); color: var(--text-legend); }
+.bn-info-value { flex: 1; min-width: 0; font: 400 11px/15px var(--f-ui); color: var(--text-strong); }
+.bn-info-note { margin: 0; font: 400 11px/16px var(--f-ui); color: var(--text-strong); }
+.bn-info a { color: inherit; text-decoration: none; border-radius: 2px; }
+.bn-info a:hover { text-decoration: underline; text-underline-offset: 2px; }
+:root[data-input='keyboard'] .bn-info a:focus-visible { outline: 1px solid var(--focus-ring); outline-offset: 2px; }
 
 /* ---------------------------------------------------------------- shell restyle: plates, show key, LIVE strip, tooltip */
 :root[data-skin='braun'] .float-key { border: 0; border-radius: var(--radius-case); color: var(--text-key); }
