@@ -43,6 +43,22 @@
 /* Info key motion (--t-model, --ease-out): ui/tokens.css. */
 
 :root[data-skin='braun'] body { font: 400 11px/15px var(--f-ui); color: var(--text-strong); }
+
+/* Case noise (M18; the NOISE effect in the case/panel effect style: monotone, 0.5 px grain,
+   density 1, #464141 at up to 5 %). A static layer between the case fill and the contents of
+   the panel and the info module: the tile is a white mask with per-pixel alpha 0 to 1, tinted
+   with --fx-case-noise, one tile pixel per device pixel (0.5 px at 2x, as in Figma). Both
+   cases are stacking contexts, so z-index -1 paints over their background, under the contents;
+   the minimised key's face covers it. No animation, no per-frame cost. */
+.panel-braun::before, .bn-info::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
+  background: var(--fx-case-noise);
+  -webkit-mask: url('./case-noise.png') 0 0 / 128px 128px repeat;
+  mask: url('./case-noise.png') 0 0 / 128px 128px repeat;
+}
+@media (min-resolution: 2dppx) {
+  .panel-braun::before, .bn-info::before { -webkit-mask-size: 64px 64px; mask-size: 64px 64px; }
+}
 .panel-braun { border-width: 0; font-family: var(--f-ui); }
 :where(.panel-braun) button { font-family: inherit; }
 /* Rings are drawn per control (1 px, focus/ring); the generic outline is off inside the panel. */
@@ -110,10 +126,22 @@
 
 /* ---------------------------------------------------------------- VFD (270:5193) */
 .bn-vfd {
+  position: relative;
   display: flex; align-items: center; gap: 12px; min-height: 98px; padding: 12px 14px;
-  border-radius: var(--radius-window); background: var(--vfd-window);
-  box-shadow: var(--fx-style-vfd-window), inset 0 0 0 1px var(--vfd-edge);
+  border-radius: var(--radius-window); background: var(--vfd-display-window);
+  /* M18: 4 px inside bezel (vfd/display stroke) over the window style, as in the component. */
+  box-shadow: inset 0 0 0 4px var(--vfd-display-stroke), var(--fx-style-vfd-window);
   font-family: var(--f-vfd); color: var(--vfd-bright); text-transform: lowercase;
+}
+/* Glass reflection (layer "reflection", M18): over the whole window, bezel and readout included;
+   116 px wide, full height, curved right edge (the layer's path, stretched to the window
+   height), transparent at the top to vfd/reflection (white 10 %) at the bottom. Static. */
+.bn-vfd::after {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 116px; pointer-events: none;
+  border-radius: var(--radius-window) 0 0 var(--radius-window);
+  background: linear-gradient(to bottom, transparent, var(--vfd-reflection));
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 116 98' preserveAspectRatio='none'%3E%3Cpath d='M0 0H116S109.61 41.57 104.43 61.5C99.26 81.43 88.44 98 88.44 98H0Z'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 116 98' preserveAspectRatio='none'%3E%3Cpath d='M0 0H116S109.61 41.57 104.43 61.5C99.26 81.43 88.44 98 88.44 98H0Z'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
 }
 .bn-inds { flex: none; display: flex; flex-direction: column; gap: 6px; width: 35px; margin-left: 1px; }
 .bn-ind { display: flex; align-items: center; gap: 5px; height: 9px; }
@@ -128,6 +156,8 @@
   box-shadow: inset 0 0 0 1px var(--vfd-bright), var(--glow-vfd-glow); text-shadow: var(--glow-vfd-glow);
 }
 .bn-vfd-dim { color: var(--vfd-dim); }
+/* M18: 2 px before the preset number (layer "preset number inset", space/2): 7 px from the ink chip. */
+.bn-vfd-pnum { padding-left: var(--space-2); }
 .bn-vfd-bright { color: var(--vfd-bright); text-shadow: var(--glow-vfd-glow); overflow: hidden; text-overflow: ellipsis; }
 .bn-main { display: flex; align-items: flex-end; gap: 4px; height: 26px; }
 .bn-digits { display: flex; gap: 2px; }
@@ -421,6 +451,7 @@
 
 /* ---------------------------------------------------------------- info module (230:640; docking in shell.css) */
 .bn-info {
+  position: relative; isolation: isolate;
   border-radius: var(--radius-case); background: var(--case-deck-panel); box-shadow: var(--fx-style-case-panel);
   font-family: var(--f-ui); color: var(--text-strong);
 }

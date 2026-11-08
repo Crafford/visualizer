@@ -495,6 +495,18 @@ arrows (0.1, Shift x10), Page / Home / End, double-click resets, touch, no wheel
 selector turns its pointer to the detents (31 / 76 / 120 degrees), click a number or step with
 a click on the knob, drag around it, arrows.
 
+Display and case (M18, Figma variables `vfd/display window` #131212, `vfd/display stroke` #000,
+`vfd/reflection` white 10 %, `fx/case noise` #464141 at 5 %; same in light and dark): the VFD
+(270:5193) has a 4 px inside black bezel and a glass reflection (layer "reflection": 116 px,
+full height, curved right edge, transparent at the top to white 10 % at the bottom, over the
+readout; `.bn-vfd::after` with an SVG path mask). "p01" sits 2 px in (layer "preset number
+inset", space/2), 7 px from the ink chip. The case/panel effect style carries a monotone NOISE
+effect (0.5 px grain, density 1); Figma cannot bind a variable to a noise effect, so `fx/case
+noise` mirrors its literal colour. In the app the panel and the info module have a static
+`::before` layer (z-index -1, under the contents): `--fx-case-noise` masked by `case-noise.png`
+(128 px white tile, per-pixel alpha 0 to 1; one tile pixel per device pixel). Floating plates
+and the LIVE strip have no noise (case/plate).
+
 Info module (230:640): a second case with a VFD window (AVZ1 and the version from
 package.json), about (maker, jaco.studio, x.com/jcrafford, licence with the source link), the
 note, help. Dropdown carets sit 12 px from the right edge in every VFD dropdown (257:1369).
@@ -685,4 +697,6 @@ M17 skins shown as Kitchen mixer (TE) and Atelier (Braun), light / dark mode key
 swatch face and focus per Figma; TE name right with the info well growing left, LISTEN primary;
 new about text and tagline; the app is named AVZ1 (header, info windows, page title, PNG metadata,
 console banner, README, NOTICE, package.json; the repo URL is unchanged).
+M18 Atelier display and case from Jaco's Figma edits: window #131212 with a 4 px black bezel, glass
+reflection, p01 inset 2 px, window highlight blur 0.5 px, case noise on the panel and info module.
 Next: performance tiers, mobile sheet, REC CLIP.
