@@ -139,12 +139,12 @@ function createBraunPanel(ctx: SkinContext): SkinPanel {
     h('div', { class: 'bn-switch-wrap' }, h('span', { class: 'bn-label bn-switch-caption', 'aria-hidden': 'true' }, 'source'), sw.el),
     listenBtn));
 
-  // ---- ui: skin dropdown + lt / drk
+  // ---- ui: skin dropdown + light / dark
   const skinDd = createDropdown('UI theme', (id) => crossFade(() => prefs.set({ theme: id })), 'bn-dropdown dd-theme', vfdDropdownLook());
   skinDd.setItems(THEMES.map((t) => ({ value: t.id, label: t.label.toLowerCase() })), prefs.get().theme);
   d.add(skinDd.dispose);
   const modeKeys = selectorGroup<ThemeMode>(
-    [{ value: 'light', label: 'lt', ariaLabel: 'Light' }, { value: 'dark', label: 'drk', ariaLabel: 'Dark' }],
+    [{ value: 'light', label: 'light', ariaLabel: 'Light' }, { value: 'dark', label: 'dark', ariaLabel: 'Dark' }],
     prefs.get().mode, (m) => crossFade(() => prefs.set({ mode: m })), 'UI brightness');
   d.add(prefs.watch((p) => { skinDd.set(p.theme); modeKeys.set(p.mode); }));
   const ui = section('ui', 'ui', h('div', { class: 'bn-row bn-ui-row' }, h('span', { class: 'bn-cell' }, skinDd.el), modeKeys.el));
@@ -198,4 +198,4 @@ function createBraunPanel(ctx: SkinContext): SkinPanel {
   };
 }
 
-export const BRAUN_SKIN: Skin = { id: 'braun', label: 'braun', loadFonts, createPanel: createBraunPanel };
+export const BRAUN_SKIN: Skin = { id: 'braun', label: 'atelier', loadFonts, createPanel: createBraunPanel };

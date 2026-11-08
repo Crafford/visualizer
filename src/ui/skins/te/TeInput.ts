@@ -8,7 +8,7 @@ import type { ListenController } from '../../listen';
 
 /**
  * TE input group (Figma TE 84:11369, states 84:11990): SYSTEM [slide switch] MIC and the LISTEN
- * key (latching, LED). No hint line (M16): the OLED shows the live surface / device, errors and
+ * key (latching, LED; the panel's primary key since M17: orange, its LED lit white while listening). No hint line (M16): the OLED shows the live surface / device, errors and
  * the unsupported reason.
  */
 export function createTeInput(listen: ListenController): Component {
@@ -18,7 +18,7 @@ export function createTeInput(listen: ListenController): Component {
     onChange: (k) => listen.select(k),
   });
   d.add(sw.dispose);
-  const key = createKey({ label: 'LISTEN', led: true, cls: 'key-listen', tip: 'Start or stop listening (Space)', onClick: () => listen.toggle() });
+  const key = createKey({ label: 'LISTEN', led: true, primary: true, cls: 'key-listen', tip: 'Start or stop listening (Space)', onClick: () => listen.toggle() });
   key.setAttribute('aria-pressed', 'false');
 
   d.add(listen.watch((v) => {

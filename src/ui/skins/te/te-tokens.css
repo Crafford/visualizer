@@ -46,6 +46,10 @@
   --primary-shadow: 0 2px 0 rgba(0, 0, 0, 0.22), 0 4px 6px rgba(0, 0, 0, 0.12), inset 0 0.5px 0 #FFFFFF;
   --primary-hover: rgba(255, 255, 255, 0.18);
   --primary-press-shadow: var(--key-press-shadow);
+  /* LED on the primary (LISTEN) key, M17: dark-orange well off, white with a glow lit */
+  --primary-led-off: rgba(110, 30, 4, 0.55);
+  --primary-led-on: #FFFFFF;
+  --primary-led-glow: 0 0 4px rgba(255, 255, 255, 0.95), 0 0 1px rgba(255, 255, 255, 1);
 
   /* Accent and status */
   --accent: #FF5A1F;
@@ -146,6 +150,9 @@
   --primary-shadow: 0 2px 0 rgba(0, 0, 0, 0.45), 0 4px 6px rgba(0, 0, 0, 0.24), inset 0 0.5px 0 rgba(255, 255, 255, 0.35);
   --primary-hover: rgba(255, 255, 255, 0.12);
   --primary-press-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.35), 0 0.5px 0 rgba(0, 0, 0, 0.45), inset 0 2px 3px rgba(0, 0, 0, 0.18);
+  --primary-led-off: rgba(110, 30, 4, 0.55);
+  --primary-led-on: #FFFFFF;
+  --primary-led-glow: 0 0 4px rgba(255, 255, 255, 0.95), 0 0 1px rgba(255, 255, 255, 1);
 
   --accent: #FF5A1F;
   --accent-glow: 0 0 5px rgba(255, 90, 31, 0.8);

@@ -7,33 +7,37 @@
 .panel-head { display: flex; flex-direction: column; gap: 16px; padding: 14px var(--pad-x) 18px; }
 .title-row { display: flex; align-items: center; gap: 8px; height: 17px; }
 .panel-title { font: 500 var(--fs-title)/17px var(--f-mono); letter-spacing: var(--ls-title); color: var(--ink); }
-.panel-version { font: 400 var(--fs-key)/13px var(--f-mono); letter-spacing: var(--ls-label); color: var(--muted); }
-/* VZ-01 info key (M16, Figma TE 290:2 "Title row — info key states"): on hover, keyboard focus or
-   while the info module is open a recessed well grows right behind the name and the info icon
-   fades in (orange while open). The name never moves: the 6 px padding is taken back by the
-   negative margin, so it sits 8 px from the hide icon as before. */
+/* VZ-01 info key (M17, Figma TE 290:2 "Title row — info key states"): right-aligned like
+   Braun's VZ1. On hover, keyboard focus or while the info module is open the icon slot opens
+   (0 -> 12 px + 4 px gap) to the right of the name; the key is anchored right, so the recessed
+   well grows left and the name slides left, and the icon fades in (orange while open). The 6 px
+   padding is taken back by the negative margin: closed, the name ends at the panel's 20 px edge. */
 .te-model-h { display: flex; margin: 0; font: inherit; }
 .te-model {
-  position: relative; display: flex; align-items: center; gap: 4px; height: 17px; margin-left: -6px; padding: 0 6px;
+  position: relative; display: flex; align-items: center; height: 17px; margin-right: -6px; padding: 0 6px;
   border: 0; background: none; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .te-model-name { position: relative; }
 .te-model-well {
-  position: absolute; left: 0; top: -2.5px; width: calc(100% - 16px); height: 22px; border-radius: 4px; opacity: 0;
+  position: absolute; left: 0; right: 0; top: -2.5px; height: 22px; border-radius: 4px; opacity: 0;
   background: var(--info-well); box-shadow: var(--info-well-shadow);
-  transition: width var(--t-model) var(--ease-out), opacity var(--t-model) var(--ease-out), background-color var(--t-press) var(--ease-ui);
+  transition: opacity var(--t-model) var(--ease-out), background-color var(--t-press) var(--ease-ui);
 }
-.te-model-icon { position: relative; display: block; width: 12px; height: 12px; opacity: 0; transition: opacity var(--t-model) var(--ease-out), color var(--t-ui) var(--ease-ui); }
-.te-model-icon svg { display: block; }
-.te-model.is-open .te-model-well, :root[data-input='keyboard'] .te-model:focus-visible .te-model-well { width: 100%; opacity: 1; }
-.te-model.is-open .te-model-icon, :root[data-input='keyboard'] .te-model:focus-visible .te-model-icon { opacity: 1; }
+.te-model-icon {
+  position: relative; display: block; width: 0; height: 12px; margin-left: 0; overflow: hidden; opacity: 0;
+  transition: width var(--t-model) var(--ease-out), margin-left var(--t-model) var(--ease-out),
+    opacity var(--t-model) var(--ease-out), color var(--t-ui) var(--ease-ui);
+}
+.te-model-icon svg { display: block; flex: none; }
+.te-model.is-open .te-model-well, :root[data-input='keyboard'] .te-model:focus-visible .te-model-well { opacity: 1; }
+.te-model.is-open .te-model-icon, :root[data-input='keyboard'] .te-model:focus-visible .te-model-icon { width: 12px; margin-left: 4px; opacity: 1; }
 .te-model.is-open .te-model-icon { color: var(--accent); }
 @media (hover: hover) {
-  .te-model:hover .te-model-well { width: 100%; opacity: 1; }
-  .te-model:hover .te-model-icon { opacity: 1; }
+  .te-model:hover .te-model-well { opacity: 1; }
+  .te-model:hover .te-model-icon { width: 12px; margin-left: 4px; opacity: 1; }
 }
-.te-model:active .te-model-well { width: 100%; opacity: 1; background: var(--info-well-pressed); }
-.te-model:active .te-model-icon { opacity: 1; }
+.te-model:active .te-model-well { opacity: 1; background: var(--info-well-pressed); }
+.te-model:active .te-model-icon { width: 12px; margin-left: 4px; opacity: 1; }
 .te-model:focus-visible { outline: none; }
 :root[data-input='keyboard'] .te-model:focus-visible::after {
   content: ''; position: absolute; left: -2px; right: -2px; top: -4.5px; bottom: -4.5px; pointer-events: none;
@@ -233,7 +237,11 @@ input.oled-field:focus { outline: none; }
 .te-switch .sw-ridge { width: 1px; height: 6px; background: var(--switch-cap-edge); }
 :root[data-input='keyboard'] .te-switch .sw-body:focus-visible { outline: 1.5px solid var(--accent); outline-offset: 2px; }
 .key-listen { width: 100%; }
-.key-listen[aria-pressed='true'] { color: var(--accent); }
+/* LISTEN is the primary key (M17): orange, its legend stays light when latched; the LED reads on
+   orange as a dark-orange well when off and white with a glow while listening. */
+.key-primary .led { background: var(--primary-led-off); }
+.key.key-primary[aria-pressed='true']:has(> .led) { color: var(--primary-fg); }
+.key.key-primary[aria-pressed='true'] .led { background: var(--primary-led-on); box-shadow: var(--primary-led-glow); }
 .key-listen .led { top: 5px; left: 5px; }
 
 /* ---------------------------------------------------------------- presets */

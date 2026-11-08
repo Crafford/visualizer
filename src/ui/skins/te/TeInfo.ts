@@ -8,9 +8,10 @@ import { INFO_ABOUT, INFO_NOTE, INFO_TAGLINE, infoHelp, infoValue, type InfoRow 
 export const TE_INFO_ICON = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><circle cx="6" cy="6" r="5.3" stroke="currentColor" stroke-width="1.2"/><rect x="5.4" y="5" width="1.2" height="4" fill="currentColor"/><circle cx="6" cy="3.3" r="0.8" fill="currentColor"/></svg>';
 
 /**
- * The VZ-01 title as the info key (Figma TE "Title row — info key states" in 290:2): on hover,
- * keyboard focus or while the module is open a recessed well grows right behind the name and the
- * info icon fades in (orange while open). The name never moves. The caller puts it in the h1.
+ * The VZ-01 title as the info key, right-aligned in the title row (M17; Figma TE "Title row —
+ * info key states" in 290:2): on hover, keyboard focus or while the module is open a recessed well
+ * grows left behind the name, the name slides left and the info icon fades in to its right
+ * (orange while open), as Braun's VZ1. The caller puts it in the h1.
  */
 export function teInfoKey(): HTMLButtonElement {
   return h('button', { type: 'button', class: 'te-model', 'aria-label': 'About VZ-01' },
