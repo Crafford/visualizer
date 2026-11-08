@@ -9,9 +9,9 @@ const rows = (list: readonly InfoRow[]) => h('div', { class: 'bn-info-list' }, .
 
 /**
  * Braun info module markup (Figma 230:640, light 230:643 / dark 230:704; over canvas 230:2128):
- * a second case with the title and close key, a VFD window (VZ1 + version, tagline), about
+ * a second case with the title and close key, a VFD window (AVZ1 + version, tagline), about
  * (maker, web, x, licence with the source link), the note, and help. Content and behaviour
- * (docking, VZ1 key, close, Escape, hide) are shared: ui/info.ts.
+ * (docking, AVZ1 key, close, Escape, hide) are shared: ui/info.ts.
  */
 export function buildBraunInfo(version: string, onClose: () => void): { el: HTMLElement; close: HTMLElement } {
   const close = actionKey({ label: 'close', tip: 'Close (Esc)', onClick: onClose });
@@ -19,7 +19,7 @@ export function buildBraunInfo(version: string, onClose: () => void): { el: HTML
     h('div', { class: 'bn-info-head' },
       h('div', { class: 'bn-info-title-row' }, h('h2', { class: 'bn-info-title' }, 'info'), close),
       h('div', { class: 'bn-info-vfd' },
-        h('div', { class: 'bn-info-model' }, h('span', { class: 'bn-info-vz' }, 'VZ1'), h('span', { class: 'bn-info-ver' }, `v${version}`)),
+        h('div', { class: 'bn-info-model' }, h('span', { class: 'bn-info-vz' }, 'AVZ1'), h('span', { class: 'bn-info-ver' }, `v${version}`)),
         h('div', { class: 'bn-info-tag' }, INFO_TAGLINE))),
     h('div', { class: 'bn-info-sec' },
       header('info-about', 'about'),

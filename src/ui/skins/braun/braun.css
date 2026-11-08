@@ -49,8 +49,8 @@
 .panel-braun :focus-visible, .bn-info :focus-visible { outline: none; }
 
 /* ---------------------------------------------------------------- shared type */
-.bn-label { display: block; font: 400 9px/12px var(--f-ui); color: var(--text-key); white-space: nowrap; transition: color var(--t-ui) var(--ease-ui), opacity var(--t-ui) var(--ease-ui); }
-.bn-legend { display: block; font: 400 9px/12px var(--f-ui); color: var(--text-legend); white-space: nowrap; }
+.bn-label { display: block; font: 400 10px/12px var(--f-ui); color: var(--text-key); white-space: nowrap; transition: color var(--t-ui) var(--ease-ui), opacity var(--t-ui) var(--ease-ui); }
+.bn-legend { display: block; font: 400 10px/12px var(--f-ui); color: var(--text-legend); white-space: nowrap; }
 .bn-led {
   display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--led-off);
   transition: background-color var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui);
@@ -71,14 +71,15 @@
   content: ''; position: absolute; left: -2px; top: 2px; width: 20px; height: 20px;
   border: 1px solid var(--focus-ring); border-radius: 4px;
 }
-/* VZ1 model name = the info key (256:1309): hover / open / keyboard focus grows a recessed well
-   to the left of the name, slides the name left and fades in the info icon. */
+/* AVZ1 model name = the info key (256:1309): hover / open / keyboard focus grows a recessed well
+   to the left of the name, slides the name left and fades in the info icon. AVZ1 (M17): the name
+   is 40 px, so the key is 73 px (8 + 40 + 7 + 12 icon + 6). */
 .bn-model {
-  position: relative; width: 64px; height: 24px; padding: 0; border: 0; background: none; cursor: pointer;
+  position: relative; width: 73px; height: 24px; padding: 0; border: 0; background: none; cursor: pointer;
   color: var(--text-strong);
 }
 .bn-model-well {
-  position: absolute; top: 0; left: 33px; width: 31px; height: 24px; border-radius: 3px; opacity: 0;
+  position: absolute; top: 0; left: 33px; width: 40px; height: 24px; border-radius: 3px; opacity: 0;
   background: var(--info-well); box-shadow: var(--fx-style-well-info);
   transition: left var(--t-model) var(--ease-out), width var(--t-model) var(--ease-out), opacity var(--t-model) var(--ease-out),
     background-color var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui);
@@ -88,19 +89,19 @@
   transition: left var(--t-model) var(--ease-out);
 }
 .bn-model-icon {
-  position: absolute; top: 6px; left: 46px; width: 12px; height: 12px; display: block; opacity: 0;
+  position: absolute; top: 6px; left: 55px; width: 12px; height: 12px; display: block; opacity: 0;
   transition: opacity var(--t-model) var(--ease-out);
 }
 .bn-model-icon svg { display: block; }
-.bn-model.is-open .bn-model-well, :root[data-input='keyboard'] .bn-model:focus-visible .bn-model-well { left: 0; width: 64px; opacity: 1; }
+.bn-model.is-open .bn-model-well, :root[data-input='keyboard'] .bn-model:focus-visible .bn-model-well { left: 0; width: 73px; opacity: 1; }
 .bn-model.is-open .bn-model-name, :root[data-input='keyboard'] .bn-model:focus-visible .bn-model-name { left: 8px; }
 .bn-model.is-open .bn-model-icon, :root[data-input='keyboard'] .bn-model:focus-visible .bn-model-icon { opacity: 1; }
 @media (hover: hover) {
-  .bn-model:hover .bn-model-well { left: 0; width: 64px; opacity: 1; }
+  .bn-model:hover .bn-model-well { left: 0; width: 73px; opacity: 1; }
   .bn-model:hover .bn-model-name { left: 8px; }
   .bn-model:hover .bn-model-icon { opacity: 1; }
 }
-.bn-model:active .bn-model-well { left: 0; width: 64px; opacity: 1; background: var(--info-well-pressed); box-shadow: var(--fx-style-well-info-pressed); }
+.bn-model:active .bn-model-well { left: 0; width: 73px; opacity: 1; background: var(--info-well-pressed); box-shadow: var(--fx-style-well-info-pressed); }
 .bn-model:active .bn-model-name { left: 8px; }
 .bn-model:active .bn-model-icon { opacity: 1; }
 :root[data-input='keyboard'] .bn-model:focus-visible::after {
@@ -162,7 +163,7 @@
 .bn-switch-wrap { display: flex; flex-direction: column; align-items: center; gap: 21px; }
 /* Slide switch (257:1348): legends, the well slot with a dark glass line, the ridged slider. */
 .bn-switch { display: flex; align-items: center; gap: 8px; height: 16px; }
-.bn-switch .sw-legend { font: 400 9px/12px var(--f-ui); color: var(--text-legend); cursor: pointer; user-select: none; transition: color var(--t-ui) var(--ease-ui), opacity var(--t-ui) var(--ease-ui); }
+.bn-switch .sw-legend { font: 400 10px/12px var(--f-ui); color: var(--text-legend); cursor: pointer; user-select: none; transition: color var(--t-ui) var(--ease-ui), opacity var(--t-ui) var(--ease-ui); }
 .bn-switch[data-pos='system'] .sw-left, .bn-switch[data-pos='mic'] .sw-right { color: var(--text-strong); }
 .bn-switch.is-locked .sw-left { opacity: 0.35; cursor: default; }
 .bn-switch .sw-body { --pos: 0; position: relative; flex: none; width: 40px; height: 16px; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; }
@@ -320,7 +321,7 @@
 .bn-rotary-title { color: var(--text-key); }
 .bn-knob { position: relative; display: block; width: 60.44px; height: 53.35px; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; }
 .bn-pos { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: var(--selector-dot); }
-.bn-pos-label { position: absolute; width: 6px; font: 400 9px/12px var(--f-ui); color: var(--selector-label); text-align: center; }
+.bn-pos-label { position: absolute; width: 6px; font: 400 10px/12px var(--f-ui); color: var(--selector-label); text-align: center; }
 .bn-skirt {
   position: absolute; left: 22.44px; top: 13.35px; width: 38px; height: 38px; border-radius: 50%;
   background: linear-gradient(180deg, #2A2C2E, #0C0D0E); box-shadow: var(--fx-style-selector-skirt);
@@ -406,13 +407,13 @@
 }
 .bn-swatch-face {
   position: absolute; left: 3px; top: 3px; width: 34px; height: 16px; border-radius: 8px;
-  box-shadow: var(--fx-style-swatch-face), inset 0 0 0 1px var(--key-edge);
+  box-shadow: inset 0 0 0 1px var(--key-edge);   /* M17: the face has no effect, only its 1 px edge (253:1340) */
   transition: background-color var(--t-ui) var(--ease-ui), filter var(--t-ui) var(--ease-ui);
 }
 @media (hover: hover) { .bn-swatch-well:hover .bn-swatch-face { filter: brightness(1.06); } }
 .bn-swatch-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; padding: 0; border: 0; cursor: pointer; }
 :root[data-input='keyboard'] .bn-swatch-well:has(input:focus-visible)::after {
-  content: ''; position: absolute; inset: -3px; border: 1px solid var(--focus-ring); border-radius: 14px;
+  content: ''; position: absolute; inset: -2.5px; border: 1px solid var(--focus-ring); border-radius: 13.5px;   /* 253:1346: 45 x 27 capsule, 1 px inside */
 }
 
 /* ---------------------------------------------------------------- output */
@@ -438,7 +439,7 @@
 .bn-info-help { padding-bottom: 20px; }
 .bn-info-list { display: flex; flex-direction: column; gap: 6px; }
 .bn-info-row { display: flex; gap: 12px; }
-.bn-info-legend { flex: none; width: 64px; font: 400 9px/15px var(--f-ui); color: var(--text-legend); }
+.bn-info-legend { flex: none; width: 64px; font: 400 10px/15px var(--f-ui); color: var(--text-legend); }
 .bn-info-value { flex: 1; min-width: 0; font: 400 11px/15px var(--f-ui); color: var(--text-strong); }
 .bn-info-note { margin: 0; font: 400 11px/16px var(--f-ui); color: var(--text-strong); }
 .bn-info a { color: inherit; text-decoration: none; border-radius: 2px; }

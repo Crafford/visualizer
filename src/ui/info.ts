@@ -17,7 +17,7 @@ export const X_URL = 'https://x.com/jcrafford';
 export type InfoPart = string | { href: string; text: string };
 export interface InfoRow { legend: string; value: readonly InfoPart[] }
 
-export const INFO_TAGLINE = 'audio-reactive ink visualiser';
+export const INFO_TAGLINE = 'audio-reactive visualiser';
 
 export const INFO_ABOUT: readonly InfoRow[] = [
   { legend: 'made by', value: ['jaco crafford'] },
@@ -26,7 +26,7 @@ export const INFO_ABOUT: readonly InfoRow[] = [
   { legend: 'licence', value: ['agpl-3.0 · source on ', { href: REPO_URL, text: 'github.com/Crafford/visualizer' }] },
 ];
 
-export const INFO_NOTE = 'made with love and in appreciation of mid-century inspired design. built with claude opus 5.5, co-designed in figma with claude.';
+export const INFO_NOTE = 'made with love, inspired by mid-century appliance design. built with claude opus 5.5, co-designed in figma with claude.';
 
 /** Help rows; `valueControls` names the skin's audio response controls ("faders", "dials"). */
 export const infoHelp = (valueControls: string): readonly InfoRow[] => [

@@ -12,8 +12,10 @@ export interface UiTheme { id: string; /** Dropdown text, lower case (skins set 
 
 /** TE stays the default skin (first). */
 export const THEMES: readonly UiTheme[] = [
-  { id: 'te', label: 'teenage eng.' },
-  { id: 'braun', label: 'braun' },
+  /** Shown as "kitchen mixer" (M17); the id stays 'te' so stored prefs still work. */
+  { id: 'te', label: 'kitchen mixer' },
+  /** Shown as "atelier" (M17; no trademark in the UI); the id stays 'braun' so stored prefs still work. */
+  { id: 'braun', label: 'atelier' },
 ];
 
 export interface UiPrefs {

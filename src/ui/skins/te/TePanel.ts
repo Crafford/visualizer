@@ -119,7 +119,7 @@ const tePresetsLook: PresetsLook = {
 };
 
 /**
- * The TE panel (design 84:11263): title row (VZ-01 info key), OLED, Input / UI / Visualization /
+ * The TE panel (design 84:11263): title row (AVZ1 info key), OLED, Input / UI / Visualization /
  * Presets groups, then the numbered parameter sections (from the abstract model) and Output;
  * the info module (TeInfo.ts) docks right of it.
  */
@@ -131,11 +131,11 @@ function createTePanel(ctx: SkinContext): SkinPanel {
     type: 'button', class: 'icon-btn', 'aria-label': 'Hide panel', 'aria-controls': 'panel', 'aria-expanded': 'true',
     'data-tip': 'Hide panel (H)', onclick: () => actions.hide(),
   }, svg(ICONS.sidebar));
-  // VZ-01 is the info key (M16), as VZ1 is in Braun.
+  // AVZ1 is the info key (M16), right-aligned as AVZ1 is in Braun (M17); the version lives in
+  // the info module only.
   const model = teInfoKey();
   const titleRow = h('div', { class: 'title-row' },
-    hideBtn, h('h1', { class: 'te-model-h' }, model), h('span', { class: 'spacer' }),
-    h('span', { class: 'panel-version' }, `V${ctx.version}`));
+    hideBtn, h('span', { class: 'spacer' }), h('h1', { class: 'te-model-h' }, model));
 
   const display = createTeDisplay(engine, listen);
   d.add(display.dispose);
@@ -190,7 +190,7 @@ function createTePanel(ctx: SkinContext): SkinPanel {
   setDisabled(rec, true);
   output.body.append(h('div', { class: 'output-row' },
     rec,
-    createKey({ label: 'SCREENSHOT', icon: ICONS.dot, primary: true, cls: 'key-wide', tip: 'Save a PNG of the canvas', onClick: actions.screenshot }),
+    createKey({ label: 'SCREENSHOT', icon: ICONS.dot, cls: 'key-wide', tip: 'Save a PNG of the canvas', onClick: actions.screenshot }),
   ));
 
   const shell = createPanelShell('te', [head, host, output.el], hideBtn.firstElementChild!, actions.toggle);
@@ -208,4 +208,4 @@ function createTePanel(ctx: SkinContext): SkinPanel {
   };
 }
 
-export const TE_SKIN: Skin = { id: 'te', label: 'teenage eng.', createPanel: createTePanel };
+export const TE_SKIN: Skin = { id: 'te', label: 'kitchen mixer', createPanel: createTePanel };

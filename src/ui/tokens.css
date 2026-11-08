@@ -8,7 +8,7 @@
   /* Type. The TE design uses Geist Mono only (400 + 500). */
   --f-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   /* M11: every size is the design's + 1 px (the design's 8-9 px text read too small). */
-  --fs-title: 13px;      /* VZ-01 */
+  --fs-title: 13px;      /* AVZ1 */
   --fs-oled-xl: 21px;    /* OLED source title */
   --fs-section: 11px;    /* section titles, value chips, transport times */
   --fs-key: 10px;        /* key legends, dropdowns, OLED small text, hints in fields */

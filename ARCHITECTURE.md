@@ -456,7 +456,9 @@ skin. `paramSections(entry)` turns the schema into numbered sections of `value`,
 | selector | LED keys | capsule selector keys |
 | swatch | swatch key (hex as its tooltip, M16) | capsule well |
 
-Switching skin (UI theme dropdown, "TEENAGE ENG." / "braun" in each skin's case): main.ts
+Switching skin (UI theme dropdown, "KITCHEN MIXER" / "atelier" in each skin's case; since M17 the
+TE skin is called Kitchen mixer and the Braun skin Atelier in the UI, no maker names; the ids stay
+`te` / `braun` so stored prefs keep working): main.ts
 disposes the panel and mounts the new skin's panel in place. Values, LT / DRK, the panel open
 state, the preset selection (module-level in PresetsSection.ts) and the listening source are
 app state and survive; the skin persists in prefs (`theme`). index.html applies the stored
@@ -475,15 +477,16 @@ Tokens: `braun-tokens.css` is generated 1:1 from the Figma "skin" variable colle
 light / dark; `case/deck panel` -> `--case-deck-panel`) and its effect styles
 (`--fx-style-<name>`, colours bound to the `fx/*` variables) plus glows (`--glow-*`). Unbound
 design values (knob, key-face and dome gradient stops) are written in braun.css as in the
-components. Fonts: Host Grotesk 400 (500 for VZ1) and Share Tech Mono (the VFD), Google Fonts
+components. Legends and labels are 10 px (Figma text styles `skin/legend 10`, `skin/legend 10 row`, M17).
+Fonts: Host Grotesk 400 (500 for AVZ1) and Share Tech Mono (the VFD), Google Fonts
 with preconnect and `display=swap`, loaded only when the skin is used.
 
 Panel (Panel 258:2624): 3 px case, deck at 90% (light) / 85% (dark), case shadow; header with
-the hide-panel icon key and the VZ1 model name (the info key: on hover / focus / open a
+the hide-panel icon key and the AVZ1 model name (the info key: on hover / focus / open a
 recessed well grows to the left, the name slides left, the info icon fades in, 200 ms
 ease-out); the VFD (source LEDs, ink chip + preset, BPM in slanted seven-segment SVG digits
 with ghost 8s and glow, status line and surface / device, a 12-segment clip meter from the
-level); input (slide switch + green power listen key with LED); ui (VFD dropdown + lt / drk
+level); input (slide switch + green power listen key with LED); ui (VFD dropdown + light / dark
 selector keys); visualization; presets (VFD dropdown, round action keys reset / save / delete /
 import / export, LED list, naming field with a green caret, saved window); the effect sections
 and audio response (see the table); output (record clip disabled, screenshot, left aligned).
@@ -492,10 +495,12 @@ arrows (0.1, Shift x10), Page / Home / End, double-click resets, touch, no wheel
 selector turns its pointer to the detents (31 / 76 / 120 degrees), click a number or step with
 a click on the knob, drag around it, arrows.
 
-Info module (230:640): a second case with a VFD window (VZ1 and the version from
+Info module (230:640): a second case with a VFD window (AVZ1 and the version from
 package.json), about (maker, jaco.studio, x.com/jcrafford, licence with the source link), the
 note, help. Dropdown carets sit 12 px from the right edge in every VFD dropdown (257:1369).
-Section rules (`rule/section`) have the same colour in light and dark (M16).
+Section rules (`rule/section`): text/legend in light, #070908 in dark (M17). Swatch (253:1349, M17):
+the face has only its 1 px key-edge stroke (no inner shadow), the well keeps `well/inset`; keyboard
+focus is a 1 px focus-ring capsule 2.5 px outside the well (45 x 27).
 
 Info module, both skins (`ui/info.ts`, M16): the content is shared (lower case; TE sets upper
 case in CSS; the audio response help names the skin's controls, faders / dials). `attachInfo`
@@ -514,7 +519,7 @@ renderer). Over it float:
 - bottom-centre: the LIVE strip (see LIVE strip). It is centred in the window, or in the
   space right of the open panel when centring would overlap it.
 
-Show / hide: the side-panel icon left of the "VZ-01" title, the floating key, or H (ignored
+Show / hide: the side-panel icon left of the "AVZ1" title, the floating key, or H (ignored
 while typing in a text field, or with modifiers). 180 ms fade + 12 px slide (0 ms with
 `prefers-reduced-motion`); the hidden panel is `inert`. Focus moves to the key that brings
 it back. Fullscreen targets `document.documentElement`, so the panel stays toggleable.
@@ -570,11 +575,12 @@ OKLab L because L*'s linear toe keeps mirrored darks distinguishable (OKLab send
 colour or the blend by hand never changes the UI mode; presets loaded later keep their colours.
 
 TE panel, top to bottom:
-- Title row: side-panel icon, VZ-01 (the info key, M16, Figma TE 290:2: on hover / keyboard
-  focus / open a recessed well grows right behind the name and the info icon fades in, orange
-  while open, 200 ms ease-out; the name never moves), version.
+- Title row: side-panel icon left, AVZ1 right (M17, as Braun's AVZ1; no version, it is in the info
+  module). AVZ1 is the info key (Figma TE 290:2): on hover / keyboard focus / open a recessed well
+  grows left behind the name, the name slides left and the info icon fades in to its right,
+  orange while open, 200 ms ease-out.
 - Info module (`TeInfo.ts`, 290:6 light / 290:148 dark, over canvas 291:101): a TE panel card
-  with INFO and CLOSE, an OLED window (INFO tag, version, VZ-01, tagline), ABOUT and HELP as
+  with INFO and CLOSE, an OLED window (INFO tag, version, AVZ1, tagline), ABOUT and HELP as
   TE sections; legends and text upper case.
 - OLED (`skins/te/TeDisplay.ts`, M15 84:11269): effect tag (INK / SMOKE), preset (P01
   DEFAULT); the main row: source title (SYSTEM AUDIO / MIC) over its state (LISTENING in orange
@@ -583,8 +589,9 @@ TE panel, top to bottom:
   11th, orange above 86% = peaking; a faint idle comb when idle) and the LVL meter (16
   segments, top 3 hot, a peak-hold segment). No track time. Updated from the engine's
   per-frame `level` event; no extra rAF loop.
-- Input (`TeInput.ts`, 84:11369): SYSTEM [slide switch] MIC, the LISTEN key (LED, orange
-  legend while latched). No hint line (M16): the OLED shows the state.
+- Input (`TeInput.ts`, 84:11369): SYSTEM [slide switch] MIC, the LISTEN key: the panel's primary
+  key (M17, orange); its LED is a dark-orange well when off and white with a glow while
+  listening, the legend stays light. No hint line (M16): the OLED shows the state.
 - UI: skin dropdown + LT / DRK (after Input since M16).
 - Visualization: INK / SMOKE dropdown (replaces the header segmented control).
 - Presets (see Presets).
@@ -598,7 +605,7 @@ TE panel, top to bottom:
   black / grey per the design for Ink; Smoke by analogy: Count and Density orange, motion
   black, the softening dials grey) and the Ink Render order (INK, CONTRAST, SIZE, GRAIN). The section was called Look before
   M16 (section id `render`; param ids unchanged, so presets load as before).
-- Output: REC CLIP (disabled, "Coming soon" tooltip) and SCREENSHOT (primary key).
+- Output: REC CLIP (disabled, "Coming soon" tooltip) and SCREENSHOT (a normal key since M17).
 
 Components:
 - Key: 30 px bevelled key; hover wash, pressed (sunk, 1 px down, inner shadow), on (orange
@@ -674,4 +681,8 @@ mic + listen; file, link and the transport removed), skin system (registry, abst
 model, runtime switching), Braun skin from Figma variables, info module. M16 Braun fixes
 (dropdown carets, switch drag and click, section rules equal in LT / DRK), shared info module and
 the TE info module, TE Input before UI, no input hint, no swatch hex, Look renamed Render.
+M17 skins shown as Kitchen mixer (TE) and Atelier (Braun), light / dark mode keys, 10 px legends, dark rules #070908,
+swatch face and focus per Figma; TE name right with the info well growing left, LISTEN primary;
+new about text and tagline; the app is named AVZ1 (header, info windows, page title, PNG metadata,
+console banner, README, NOTICE, package.json; the repo URL is unchanged).
 Next: performance tiers, mobile sheet, REC CLIP.
