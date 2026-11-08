@@ -58,7 +58,7 @@
   --fx-style-vfd-field: inset 0px 1px 4px 0px #000000B2, 0px 1px 0px 0px #FFFFFF0F;
   --fx-style-vfd-strip: inset 0px 1px 2px 0px #00000099;
   --fx-style-vfd-menu: 0px 12px 24px 0px #0000008C;
-  --fx-style-fader-cap: 0px 2px 3px 0px #00000073, inset 0px 1px 0px 0px #FFFFFF1F;
+  --fx-style-fader-cap: 0px 3px 8px 0px #00000033, 0px 1px 2px 0px #00000073, inset 0px 1px 0px 0px #FFFFFF1F;
   --fx-style-fader-slot: 0px 1px 0px 0px #FFFFFF0F;
   --fx-style-fader-index: 0px 0.5px 0px 0px #FFFFFF99;
   --fx-style-swatch-face: inset 0px -1px 0px 0px var(--fx-swatch-highlight);
