@@ -2,7 +2,7 @@
   "name": "ink-visualizer",
   "private": true,
   "version": "0.3.0",
-  "description": "VZ-01: a browser audio-reactive visualizer",
+  "description": "AVZ1: a browser audio-reactive visualizer",
   "author": "Jaco Crafford",
   "license": "AGPL-3.0-only",
   "homepage": "https://crafford.github.io/visualizer/",

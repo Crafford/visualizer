@@ -4,7 +4,7 @@
 /** Author and source metadata written into exported PNGs (tEXt chunks, invisible in the image). */
 export const PNG_CREDIT = {
   Author: 'Jaco Crafford',
-  Software: 'VZ-01 Visualizer',
+  Software: 'AVZ1 Visualizer',
   Source: 'https://github.com/Crafford/visualizer',
   Copyright: 'Copyright (C) 2026 Jaco Crafford, AGPL-3.0-only',
 } as const;

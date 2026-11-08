@@ -19,9 +19,9 @@ import { canvasPatch, type UiMode } from './app/canvasMode';
 import { withPngText } from './app/pngMeta';
 import { version } from '../package.json';
 
-/*! VZ-01 Visualizer. Copyright (C) 2026 Jaco Crafford. https://github.com/Crafford/visualizer
+/*! AVZ1 Visualizer. Copyright (C) 2026 Jaco Crafford. https://github.com/Crafford/visualizer
  *  Licensed AGPL-3.0-only with additional attribution terms (see NOTICE). */
-console.info('%cVZ-01 Visualizer%c by Jaco Crafford\nhttps://github.com/Crafford/visualizer (AGPL-3.0, see NOTICE)',
+console.info('%cAVZ1 Visualizer%c by Jaco Crafford\nhttps://github.com/Crafford/visualizer (AGPL-3.0, see NOTICE)',
   'font-weight:bold', 'font-weight:normal');
 
 // UI chrome prefs (skin, panel open) first, so the first paint has the right skin.

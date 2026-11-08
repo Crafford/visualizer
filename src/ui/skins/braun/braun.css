@@ -71,14 +71,15 @@
   content: ''; position: absolute; left: -2px; top: 2px; width: 20px; height: 20px;
   border: 1px solid var(--focus-ring); border-radius: 4px;
 }
-/* VZ1 model name = the info key (256:1309): hover / open / keyboard focus grows a recessed well
-   to the left of the name, slides the name left and fades in the info icon. */
+/* AVZ1 model name = the info key (256:1309): hover / open / keyboard focus grows a recessed well
+   to the left of the name, slides the name left and fades in the info icon. AVZ1 (M17): the name
+   is 40 px, so the key is 73 px (8 + 40 + 7 + 12 icon + 6). */
 .bn-model {
-  position: relative; width: 64px; height: 24px; padding: 0; border: 0; background: none; cursor: pointer;
+  position: relative; width: 73px; height: 24px; padding: 0; border: 0; background: none; cursor: pointer;
   color: var(--text-strong);
 }
 .bn-model-well {
-  position: absolute; top: 0; left: 33px; width: 31px; height: 24px; border-radius: 3px; opacity: 0;
+  position: absolute; top: 0; left: 33px; width: 40px; height: 24px; border-radius: 3px; opacity: 0;
   background: var(--info-well); box-shadow: var(--fx-style-well-info);
   transition: left var(--t-model) var(--ease-out), width var(--t-model) var(--ease-out), opacity var(--t-model) var(--ease-out),
     background-color var(--t-ui) var(--ease-ui), box-shadow var(--t-ui) var(--ease-ui);
@@ -88,19 +89,19 @@
   transition: left var(--t-model) var(--ease-out);
 }
 .bn-model-icon {
-  position: absolute; top: 6px; left: 46px; width: 12px; height: 12px; display: block; opacity: 0;
+  position: absolute; top: 6px; left: 55px; width: 12px; height: 12px; display: block; opacity: 0;
   transition: opacity var(--t-model) var(--ease-out);
 }
 .bn-model-icon svg { display: block; }
-.bn-model.is-open .bn-model-well, :root[data-input='keyboard'] .bn-model:focus-visible .bn-model-well { left: 0; width: 64px; opacity: 1; }
+.bn-model.is-open .bn-model-well, :root[data-input='keyboard'] .bn-model:focus-visible .bn-model-well { left: 0; width: 73px; opacity: 1; }
 .bn-model.is-open .bn-model-name, :root[data-input='keyboard'] .bn-model:focus-visible .bn-model-name { left: 8px; }
 .bn-model.is-open .bn-model-icon, :root[data-input='keyboard'] .bn-model:focus-visible .bn-model-icon { opacity: 1; }
 @media (hover: hover) {
-  .bn-model:hover .bn-model-well { left: 0; width: 64px; opacity: 1; }
+  .bn-model:hover .bn-model-well { left: 0; width: 73px; opacity: 1; }
   .bn-model:hover .bn-model-name { left: 8px; }
   .bn-model:hover .bn-model-icon { opacity: 1; }
 }
-.bn-model:active .bn-model-well { left: 0; width: 64px; opacity: 1; background: var(--info-well-pressed); box-shadow: var(--fx-style-well-info-pressed); }
+.bn-model:active .bn-model-well { left: 0; width: 73px; opacity: 1; background: var(--info-well-pressed); box-shadow: var(--fx-style-well-info-pressed); }
 .bn-model:active .bn-model-name { left: 8px; }
 .bn-model:active .bn-model-icon { opacity: 1; }
 :root[data-input='keyboard'] .bn-model:focus-visible::after {

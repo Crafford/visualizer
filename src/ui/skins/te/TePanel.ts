@@ -119,7 +119,7 @@ const tePresetsLook: PresetsLook = {
 };
 
 /**
- * The TE panel (design 84:11263): title row (VZ-01 info key), OLED, Input / UI / Visualization /
+ * The TE panel (design 84:11263): title row (AVZ1 info key), OLED, Input / UI / Visualization /
  * Presets groups, then the numbered parameter sections (from the abstract model) and Output;
  * the info module (TeInfo.ts) docks right of it.
  */
@@ -131,7 +131,7 @@ function createTePanel(ctx: SkinContext): SkinPanel {
     type: 'button', class: 'icon-btn', 'aria-label': 'Hide panel', 'aria-controls': 'panel', 'aria-expanded': 'true',
     'data-tip': 'Hide panel (H)', onclick: () => actions.hide(),
   }, svg(ICONS.sidebar));
-  // VZ-01 is the info key (M16), right-aligned as VZ1 is in Braun (M17); the version lives in
+  // AVZ1 is the info key (M16), right-aligned as AVZ1 is in Braun (M17); the version lives in
   // the info module only.
   const model = teInfoKey();
   const titleRow = h('div', { class: 'title-row' },

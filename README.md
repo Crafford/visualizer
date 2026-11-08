@@ -1,4 +1,4 @@
-# VZ-01 Visualizer
+# AVZ1 Visualizer
 
 A browser audio-reactive visualizer with two effects (Ink and Smoke) and a Teenage Engineering style control panel. Static site: TypeScript, Vite, three.js (WebGL2), Web Audio.
 

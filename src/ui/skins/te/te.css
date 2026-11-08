@@ -7,8 +7,8 @@
 .panel-head { display: flex; flex-direction: column; gap: 16px; padding: 14px var(--pad-x) 18px; }
 .title-row { display: flex; align-items: center; gap: 8px; height: 17px; }
 .panel-title { font: 500 var(--fs-title)/17px var(--f-mono); letter-spacing: var(--ls-title); color: var(--ink); }
-/* VZ-01 info key (M17, Figma TE 290:2 "Title row — info key states"): right-aligned like
-   Braun's VZ1. On hover, keyboard focus or while the info module is open the icon slot opens
+/* AVZ1 info key (M17, Figma TE 290:2 "Title row — info key states"): right-aligned like
+   Braun's AVZ1. On hover, keyboard focus or while the info module is open the icon slot opens
    (0 -> 12 px + 4 px gap) to the right of the name; the key is anchored right, so the recessed
    well grows left and the name slides left, and the icon fades in (orange while open). The 6 px
    padding is taken back by the negative margin: closed, the name ends at the panel's 20 px edge. */

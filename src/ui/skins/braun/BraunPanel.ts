@@ -19,7 +19,7 @@ import { attachInfo } from '../../info';
 
 const FONTS = 'https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500&family=Share+Tech+Mono&display=swap';
 
-/** Load Host Grotesk (400, 500 for VZ1) and Share Tech Mono once, only when the skin is used. */
+/** Load Host Grotesk (400, 500 for AVZ1) and Share Tech Mono once, only when the skin is used. */
 function loadFonts(): void {
   if (document.querySelector('link[data-skin-fonts="braun"]')) return;
   const pre = (href: string, cross: boolean) => {
@@ -106,7 +106,7 @@ const braunPresetsLook: PresetsLook = {
 
 /**
  * The Braun panel (Figma "Braun" 168:3: light 168:5, dark 168:1507; Panel component 258:2624):
- * a square-cornered case with the header (hide-panel icon key, VZ1 model-name info key), the
+ * a square-cornered case with the header (hide-panel icon key, AVZ1 model-name info key), the
  * VFD, then input, ui, visualization, presets, the effect's sections, audio response and output.
  */
 function createBraunPanel(ctx: SkinContext): SkinPanel {
@@ -119,8 +119,8 @@ function createBraunPanel(ctx: SkinContext): SkinPanel {
     'data-tip': 'Hide panel (H)', onclick: () => actions.hide(),
   }, svg(ICONS.sidebar));
   const model = h('button', {
-    type: 'button', class: 'bn-model', 'aria-label': 'About VZ1',
-  }, h('span', { class: 'bn-model-well', 'aria-hidden': 'true' }), h('span', { class: 'bn-model-name' }, 'VZ1'),
+    type: 'button', class: 'bn-model', 'aria-label': 'About AVZ1',
+  }, h('span', { class: 'bn-model-well', 'aria-hidden': 'true' }), h('span', { class: 'bn-model-name' }, 'AVZ1'),
   h('span', { class: 'bn-model-icon', 'aria-hidden': 'true' }, svg(INFO_ICON)));
   const vfd = createVfd(engine, listen);
   d.add(vfd.dispose);

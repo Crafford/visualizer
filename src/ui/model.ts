@@ -22,7 +22,7 @@ import { capColour, dialRank, shortLabel, type CapColour } from './controlStyle'
  *   display          effect, preset, source, BPM, level                   OLED          VFD
  *   live strip       LIVE + spectrum while the panel is hidden            plate         plate
  *   floating plates  show-panel and fullscreen keys                       48 px keys    48 px plates
- *   info key         opens the info module                                none          VZ1 model name
+ *   info key         opens the info module                                none          AVZ1 model name
  *
  * Jaco's rule: selector keys are hardware (they hold a state), action keys are software (they
  * run a command); a skin picks the kind by function, never by look.

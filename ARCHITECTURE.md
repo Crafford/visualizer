@@ -478,11 +478,11 @@ light / dark; `case/deck panel` -> `--case-deck-panel`) and its effect styles
 (`--fx-style-<name>`, colours bound to the `fx/*` variables) plus glows (`--glow-*`). Unbound
 design values (knob, key-face and dome gradient stops) are written in braun.css as in the
 components. Legends and labels are 10 px (Figma text styles `skin/legend 10`, `skin/legend 10 row`, M17).
-Fonts: Host Grotesk 400 (500 for VZ1) and Share Tech Mono (the VFD), Google Fonts
+Fonts: Host Grotesk 400 (500 for AVZ1) and Share Tech Mono (the VFD), Google Fonts
 with preconnect and `display=swap`, loaded only when the skin is used.
 
 Panel (Panel 258:2624): 3 px case, deck at 90% (light) / 85% (dark), case shadow; header with
-the hide-panel icon key and the VZ1 model name (the info key: on hover / focus / open a
+the hide-panel icon key and the AVZ1 model name (the info key: on hover / focus / open a
 recessed well grows to the left, the name slides left, the info icon fades in, 200 ms
 ease-out); the VFD (source LEDs, ink chip + preset, BPM in slanted seven-segment SVG digits
 with ghost 8s and glow, status line and surface / device, a 12-segment clip meter from the
@@ -495,7 +495,7 @@ arrows (0.1, Shift x10), Page / Home / End, double-click resets, touch, no wheel
 selector turns its pointer to the detents (31 / 76 / 120 degrees), click a number or step with
 a click on the knob, drag around it, arrows.
 
-Info module (230:640): a second case with a VFD window (VZ1 and the version from
+Info module (230:640): a second case with a VFD window (AVZ1 and the version from
 package.json), about (maker, jaco.studio, x.com/jcrafford, licence with the source link), the
 note, help. Dropdown carets sit 12 px from the right edge in every VFD dropdown (257:1369).
 Section rules (`rule/section`): text/legend in light, #070908 in dark (M17). Swatch (253:1349, M17):
@@ -519,7 +519,7 @@ renderer). Over it float:
 - bottom-centre: the LIVE strip (see LIVE strip). It is centred in the window, or in the
   space right of the open panel when centring would overlap it.
 
-Show / hide: the side-panel icon left of the "VZ-01" title, the floating key, or H (ignored
+Show / hide: the side-panel icon left of the "AVZ1" title, the floating key, or H (ignored
 while typing in a text field, or with modifiers). 180 ms fade + 12 px slide (0 ms with
 `prefers-reduced-motion`); the hidden panel is `inert`. Focus moves to the key that brings
 it back. Fullscreen targets `document.documentElement`, so the panel stays toggleable.
@@ -575,12 +575,12 @@ OKLab L because L*'s linear toe keeps mirrored darks distinguishable (OKLab send
 colour or the blend by hand never changes the UI mode; presets loaded later keep their colours.
 
 TE panel, top to bottom:
-- Title row: side-panel icon left, VZ-01 right (M17, as Braun's VZ1; no version, it is in the info
-  module). VZ-01 is the info key (Figma TE 290:2): on hover / keyboard focus / open a recessed well
+- Title row: side-panel icon left, AVZ1 right (M17, as Braun's AVZ1; no version, it is in the info
+  module). AVZ1 is the info key (Figma TE 290:2): on hover / keyboard focus / open a recessed well
   grows left behind the name, the name slides left and the info icon fades in to its right,
   orange while open, 200 ms ease-out.
 - Info module (`TeInfo.ts`, 290:6 light / 290:148 dark, over canvas 291:101): a TE panel card
-  with INFO and CLOSE, an OLED window (INFO tag, version, VZ-01, tagline), ABOUT and HELP as
+  with INFO and CLOSE, an OLED window (INFO tag, version, AVZ1, tagline), ABOUT and HELP as
   TE sections; legends and text upper case.
 - OLED (`skins/te/TeDisplay.ts`, M15 84:11269): effect tag (INK / SMOKE), preset (P01
   DEFAULT); the main row: source title (SYSTEM AUDIO / MIC) over its state (LISTENING in orange
@@ -683,5 +683,6 @@ model, runtime switching), Braun skin from Figma variables, info module. M16 Bra
 the TE info module, TE Input before UI, no input hint, no swatch hex, Look renamed Render.
 M17 skins shown as Kitchen mixer (TE) and Atelier (Braun), light / dark mode keys, 10 px legends, dark rules #070908,
 swatch face and focus per Figma; TE name right with the info well growing left, LISTEN primary;
-new about text.
+new about text and tagline; the app is named AVZ1 (header, info windows, page title, PNG metadata,
+console banner, README, NOTICE, package.json; the repo URL is unchanged).
 Next: performance tiers, mobile sheet, REC CLIP.
